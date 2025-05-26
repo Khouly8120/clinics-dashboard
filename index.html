@@ -810,7 +810,10 @@
             end: moment()
         };
         let availableWeeks = [];
-        
+        // Initialize the dashboard - THIS WAS MISSING IN THE PREVIOUS VERSION
+        window.onload = function() {
+            initializeDashboard();
+        };
         // Define all metrics with their targets and whether higher is better
         const metricsDefinition = [
             { id: 'areaManagerNotes', name: 'Area Manager Notes', target: null, higherIsBetter: null },
@@ -1656,3 +1659,8 @@
                 });
                 
                 //
+// Make sure this line is at the very end of the script:
+        google.charts.setOnLoadCallback(initializeDashboard);
+    </script>
+</body>
+</html>
