@@ -1,0 +1,2669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinic Metrics Alert Dashboard (Dual Sheet)</title>
+    <!-- Google Charts Library -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!-- Date Range Picker Dependencies -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <style>
+        /* CSS Styles remain largely the same, adding styles for validation */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .last-updated {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .validation-section {
+            background: #fffbe6; /* Light yellow */
+            border: 1px solid #ffe58f; /* Yellow border */
+            color: #faad14; /* Darker yellow text */
+            padding: 15px;
+            margin: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .validation-section h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #d48806; /* Darker yellow for heading */
+        }
+
+        .validation-section ul {
+            list-style-type: disc;
+            margin-left: 20px;
+            padding-left: 0;
+        }
+        
+        .validation-section li {
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        
+        .validation-section .error {
+            color: #cf1322; /* Red for errors */
+            font-weight: bold;
+        }
+        
+        .validation-section .warning {
+             color: #d48806; /* Darker yellow for warnings */
+        }
+        
+        .validation-section .success {
+             color: #389e0d; /* Green for success */
+             font-weight: bold;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .filter-group select, .filter-group input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .summary-card .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .critical { color: #e74c3c; }
+        .high { color: #f39c12; }
+        .low { color: #f1c40f; }
+        .normal { color: #27ae60; }
+
+        .main-table {
+            margin: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+        }
+
+        .view-toggle button {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background-color 0.3s;
+        }
+
+        .view-toggle button.active {
+            background-color: rgba(255, 255, 255, 0.4);
+            font-weight: bold;
+        }
+
+        .view-toggle button:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9em;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .alert-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-align: center;
+            min-width: 60px;
+            display: inline-block;
+        }
+
+        .alert-critical {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .alert-high {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .alert-low {
+            background-color: #f1c40f; /* Yellow */
+            color: #333;
+        }
+        .alert-slight {
+            background-color: #1890ff; /* Blue - Choose a suitable color */
+            color: white;
+        }
+        .alert-normal {
+            background-color: #27ae60; /* Green */
+            color: white;
+        }
+
+        .trend-arrow {
+            font-size: 1.2em;
+            margin-left: 5px;
+        }
+
+        .trend-up { color: #27ae60; } /* Green for improving trend */
+        .trend-down { color: #e74c3c; } /* Red for worsening trend */
+        .trend-same { color: #95a5a6; }
+
+        .clinic-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .metric-value {
+            text-align: center;
+        }
+
+        .deviation {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .action-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+
+        .action-button:hover {
+            background-color: #2980b9;
+        }
+
+        .details-panel {
+            position: fixed;
+            top: 0;
+            right: -800px;
+            width: 800px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .details-panel.open {
+            right: 0;
+        }
+
+        .details-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        .details-content {
+            padding: 20px;
+        }
+
+        .metric-detail {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+
+        .responsive-table {
+            overflow-x: auto;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .historical-data-section {
+            margin: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            padding-bottom: 20px;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .date-range-picker {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9em;
+            width: 250px;
+        }
+
+        .metric-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .metric-selector button {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background-color 0.3s;
+        }
+
+        .metric-selector button.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .comparison-view {
+            display: none;
+            margin: 20px;
+        }
+
+        .comparison-view.active {
+            display: block;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .comparison-table th, .comparison-table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+
+        .comparison-table th {
+            background-color: #f8f9fa;
+        }
+
+        .comparison-table .metric-name {
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .comparison-table .change-positive {
+            color: #27ae60;
+        }
+
+        .comparison-table .change-negative {
+            color: #e74c3c;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            display: flex; /* Show initially */
+        }
+        
+        .loading-overlay p {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .tab-container {
+            margin: 20px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .tab-button {
+            padding: 10px 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+        }
+
+        .tab-button.active {
+            background-color: white;
+            border-bottom: 2px solid white;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 5px 5px 5px;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .comparison-controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .comparison-type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .comparison-type-selector button {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            background-color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .comparison-type-selector button.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .comparison-options {
+            display: none;
+        }
+
+        .comparison-options.active {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .comparison-options .filter-group {
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .comparison-options .filter-group label {
+            min-width: 100px;
+        }
+
+        .comparison-options .week-selectors {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .comparison-options .week-selectors select {
+            min-width: 120px;
+        }
+
+        .comparison-options .range-pickers {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .comparison-results {
+            margin-top: 20px;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .metric-item {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #3498db;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .details-panel {
+                width: 100%;
+                right: -100%;
+            }
+
+            table {
+                font-size: 0.8em;
+            }
+
+            .chart-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .comparison-options .filter-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .metric-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div>
+             <div class="spinner"></div>
+             <p id="loadingMessage">Loading Dashboard Data...</p>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>Clinic Metrics Alert Dashboard</h1>
+        <div class="last-updated" id="lastUpdated">Loading...</div>
+    </div>
+    
+    <!-- Data Validation Section Removed -->
+
+    <div class="controls">
+        <div class="filter-group">
+            <label>Filter by Alert Level:</label>
+            <select id="alertFilter" onchange="filterTable()" disabled>
+                <option value="all">All Alerts</option>
+                <option value="critical">Critical Only</option>
+                <option value="high">High Only</option>
+                <option value="low">Low Only</option>
+                <option value="slight">Slight Only</option>
+                <option value="normal">Normal Only</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Filter by Clinic:</label>
+            <select id="clinicFilter" onchange="filterTable()" disabled>
+                <option value="all">All Clinics</option>
+                <!-- Clinic options will be populated dynamically -->
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Search Clinic:</label>
+            <input type="text" id="searchInput" placeholder="Type clinic name..." onkeyup="filterTable()" disabled>
+        </div>
+        <div class="filter-group">
+            <label>Time Period:</label>
+            <select id="timePeriodFilter" onchange="changeTimePeriod()" disabled>
+                <!-- Time periods populated dynamically -->
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Export Data:</label>
+            <button class="action-button" onclick="exportData()" disabled>Export to CSV</button>
+        </div>
+    </div>
+
+    <div class="summary-cards" id="summaryCards">
+        <!-- Summary cards will be populated dynamically -->
+         <div class="summary-card"><p>Loading data...</p></div>
+    </div>
+
+    <div class="tab-container">
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="switchTab(event, 'currentData')">Current Data</button>
+            <button class="tab-button" onclick="switchTab(event, 'historicalTrends')">Historical Trends</button>
+            <button class="tab-button" onclick="switchTab(event, 'comparisonTab')">Comparison</button>
+        </div>
+        
+        <div class="tab-content active" id="currentData">
+            <div class="main-table">
+                <div class="table-header">
+                    <div id="tableTitle">Clinic Performance Overview</div>
+                    <div class="view-toggle">
+                        <button class="active" onclick="toggleView('table')" disabled>Table View</button>
+                        <button onclick="toggleView('cards')" disabled>Card View</button>
+                    </div>
+                </div>
+                <div class="responsive-table" id="tableView">
+                    <table id="metricsTable">
+                        <thead>
+                            <tr>
+                                <th>Clinic</th>
+                                <!-- AreaManagerNotes removed -->
+                                <th>Notes Alert</th> 
+                                <th>New Patients</th>
+                                <th>Visits Target</th>
+                                <th>Daily Dist</th>
+                                <th>Utilization</th>
+                                <th>Retention (2nd)</th>
+                                <th>Retention (5th)</th>
+                                <th>Retention (10th)</th>
+                                <th>Retention (15th)</th>
+                                <th>Cancel</th>
+                                <th>No Show</th>
+                                <th>No Upcoming</th>
+                                <th>Units</th>
+                                <th>Insurance Coding</th>
+                                <th>Support Coding</th>
+                                <th>Confirmation</th>
+                                <th>Direct Access</th>
+                                <th>Survey</th>
+                                <th>Satisfaction</th>
+                                <th>Overall</th>
+                                <th>Trend</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="23" style="text-align: center;">Loading data...</td></tr> <!-- Updated colspan -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="cardView" style="display: none; padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <!-- Card view content will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="historicalTrends">
+            <div class="historical-data-section">
+                <div class="table-header">
+                    Historical Data Analysis
+                </div>
+                <div class="chart-controls">
+                    <div class="filter-group">
+                        <label>Date Range:</label>
+                        <input type="text" id="dateRangePicker" class="date-range-picker" disabled/>
+                    </div>
+                    <div class="filter-group">
+                        <label>Select Clinic:</label>
+                        <select id="clinicSelector" onchange="updateHistoricalCharts()" disabled>
+                            <option value="all">All Clinics</option>
+                            <!-- Clinic options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Select Metric:</label>
+                        <div class="metric-selector" id="metricSelector">
+                            <!-- Buttons populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container" id="trendChart"><p>Loading data...</p></div>
+                <div class="chart-container" id="comparisonChart"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="comparisonTab">
+            <div class="comparison-controls">
+                <div class="filter-group">
+                    <label>Comparison Type:</label>
+                    <div class="comparison-type-selector">
+                        <button class="active" onclick="switchComparisonType(event, 'week-to-week')" disabled>Week-to-Week</button>
+                        <button onclick="switchComparisonType(event, '4-weeks')" disabled>Compare 4 Weeks</button>
+                        <button onclick="switchComparisonType(event, 'custom-ranges')" disabled>Compare Custom Ranges</button>
+                    </div>
+                </div>
+
+                <div id="comparisonOptionsWeekToWeek" class="comparison-options active">
+                    <div class="filter-group">
+                        <label>Select Clinic:</label>
+                        <select id="compareClinicSelectorW2W" disabled>
+                            <option value="all">All Clinics</option>
+                            <!-- Clinic options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <button class="action-button" onclick="runComparison('week-to-week')" disabled>Run Comparison</button>
+                </div>
+
+                <div id="comparisonOptions4Weeks" class="comparison-options">
+                    <div class="filter-group">
+                        <label>Select Clinic:</label>
+                        <select id="compareClinicSelector4W" disabled>
+                            <option value="all">All Clinics</option>
+                            <!-- Clinic options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Select Weeks:</label>
+                        <div class="week-selectors">
+                            <select id="compareWeek1" disabled></select>
+                            <select id="compareWeek2" disabled></select>
+                            <select id="compareWeek3" disabled></select>
+                            <select id="compareWeek4" disabled></select>
+                        </div>
+                    </div>
+                    <button class="action-button" onclick="runComparison('4-weeks')" disabled>Run Comparison</button>
+                </div>
+
+                <div id="comparisonOptionsCustomRanges" class="comparison-options">
+                    <div class="filter-group">
+                        <label>Select Clinic:</label>
+                        <select id="compareClinicSelectorCR" disabled>
+                            <option value="all">All Clinics</option>
+                            <!-- Clinic options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Select Ranges:</label>
+                        <div class="range-pickers">
+                            <input type="text" id="compareRangePicker1" class="date-range-picker" disabled/>
+                            <input type="text" id="compareRangePicker2" class="date-range-picker" disabled/>
+                        </div>
+                    </div>
+                    <button class="action-button" onclick="runComparison('custom-ranges')" disabled>Run Comparison</button>
+                </div>
+            </div>
+
+            <div class="comparison-results" id="comparisonResults">
+                <!-- Comparison results will be displayed here -->
+                 <p>Loading data...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="details-panel" id="detailsPanel">
+        <div class="details-header">
+            <h2 id="detailsTitle">Clinic Details</h2>
+            <button class="close-btn" onclick="closeDetails()">&times;</button>
+        </div>
+        <div class="details-content" id="detailsContent">
+            <!-- Details will be populated dynamically -->
+        </div>
+    </div>
+
+    <script>
+        // Load Google Charts
+        google.charts.load('current', {'packages':['corechart', 'line', 'table']});
+        google.charts.setOnLoadCallback(setupDashboard);
+
+        // --- Configuration ---
+        // HARDCODED Google Sheet URLs - Replace these if your published sheet URLs change
+        const googleSheetDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=0&single=true&output=csv'; 
+        const googleSheetBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1294580086&single=true&output=csv'; 
+
+        // --- Data Definitions ---
+        // Note: AreaManagerNotes removed, AreaManagerNotesAlert kept (no benchmark)
+        const metricsDefinition = [
+            // { id: 'areaManagerNotes', name: 'Area Manager Notes', target: null, higherIsBetter: null, type: 'text' }, // Removed
+            { id: 'newPatients', name: 'New Patients %', type: 'percentage' },
+            { id: 'visitsTarget', name: 'Visits Target %', type: 'percentage' },
+            { id: 'dailyDistribution', name: 'Daily Distribution', type: 'number' }, 
+            { id: 'utilization', name: 'Utilization Rate %', type: 'percentage' },
+            { id: 'retention2nd', name: 'Retention 2nd %', type: 'percentage' },
+            { id: 'retention5th', name: 'Retention 5th %', type: 'percentage' },
+            { id: 'retention10th', name: 'Retention 10th %', type: 'percentage' },
+            { id: 'retention15th', name: 'Retention 15th %', type: 'percentage' },
+            { id: 'cancel', name: 'Cancel %', type: 'percentage' },
+            { id: 'noShow', name: 'No Show %', type: 'percentage' },
+            { id: 'noUpcoming', name: 'No Upcoming %', type: 'percentage' },
+            { id: 'units', name: 'Units %', type: 'percentage' },
+            { id: 'insuranceCoding', name: 'Insurance Utilization Coding %', type: 'percentage' },
+            { id: 'supportiveCoding', name: 'Supportive Coding %', type: 'percentage' },
+            { id: 'confirmation', name: 'Confirmation %', type: 'percentage' },
+            { id: 'directAccess', name: 'Direct Access %', type: 'percentage' },
+            { id: 'surveyCollection', name: 'Survey Collection %', type: 'percentage' },
+            { id: 'satisfaction', name: 'Hospitality/Clinical Satisfaction %', type: 'percentage' }
+        ];
+        // Expected headers for the DATA sheet
+        const expectedDataCsvHeaders = [
+            'Clinic', 'Week', 'Year', 'AreaManagerNotesAlert',
+            'NewPatients', 'VisitsTarget', 'DailyDistribution', 'Utilization', 
+            'Retention2nd', 'Retention5th', 'Retention10th', 'Retention15th', 
+            'Cancel', 'NoShow', 'NoUpcoming', 'Units', 'InsuranceCoding', 
+            'SupportiveCoding', 'Confirmation', 'DirectAccess', 'SurveyCollection', 'Satisfaction'
+        ];
+        // Expected headers for the BENCHMARK sheet (Metric names + _HigherIsBetter)
+        const expectedBenchmarkCsvHeaders = [
+            'Year', 'Week',
+            ...metricsDefinition.map(m => m.id.charAt(0).toUpperCase() + m.id.slice(1)), // Metric names (e.g., NewPatients)
+            ...metricsDefinition.map(m => m.id.charAt(0).toUpperCase() + m.id.slice(1) + '_HigherIsBetter') // HigherIsBetter flags
+        ];
+
+        // --- Global Variables ---
+        let allClinicsData = {}; // Stores processed data keyed by clinic name { clinicName: [weekData1, weekData2,...] }
+        let benchmarkData = {}; // Stores benchmark data keyed by 'Year-Week' { '2024-23': { NewPatients: 90, NewPatients_HigherIsBetter: true, ... } }
+        let currentWeekData = []; // Data for the currently selected week/period
+        let displayedData = []; // Data currently shown in the table/cards after filtering
+        let availableWeeks = []; // Array of {year, week} objects found in data
+        let latestWeek = { year: 0, week: 0 };
+        let previousWeek = { year: 0, week: 0 };
+        let currentView = 'table';
+        let selectedMetric = 'newPatients'; // Default metric for historical charts
+        let selectedClinic = 'all'; // Default clinic for historical charts
+        let trendChart;
+        let comparisonChart;
+        let dateRange = {
+            start: moment().subtract(8, 'weeks'),
+            end: moment()
+        };
+        let validationMessages = []; // Store validation messages
+
+        // --- Core Functions ---
+
+        // Initial setup function called after Google Charts loads
+        function setupDashboard() {
+            console.log("Dashboard setup initiated.");
+            initializeDatePickers(); 
+            populateMetricSelector();
+            
+            if (googleSheetDataUrl && googleSheetBenchmarkUrl) {
+                 console.log(`Attempting to autoload data from: ${googleSheetDataUrl}`);
+                 console.log(`Attempting to autoload benchmarks from: ${googleSheetBenchmarkUrl}`);
+                 initializeDashboard(); // Start the main data loading and processing sequence
+            } else {
+                 addValidationMessage('error', "Configuration Error: Data or Benchmark Google Sheet URL is not configured in the script.");
+                 displayValidationMessages();
+                 hideLoading("Configuration Error");
+                 disableControls();
+            }
+        }
+        
+        // Main function to fetch, process, and display data
+        async function initializeDashboard() {
+            console.log("Initializing dashboard with data fetch...");
+            showLoading("Fetching data and benchmarks...");
+            validationMessages = []; // Clear previous validation messages
+            allClinicsData = {}; // Reset data
+            benchmarkData = {};
+            availableWeeks = [];
+            latestWeek = { year: 0, week: 0 };
+            previousWeek = { year: 0, week: 0 };
+            
+            try {
+                // Fetch both sheets concurrently
+                const [csvDataText, csvBenchmarkText] = await Promise.all([
+                    fetchDataFromSheet(googleSheetDataUrl, 'Data'),
+                    fetchDataFromSheet(googleSheetBenchmarkUrl, 'Benchmark')
+                ]);
+                
+                showLoading("Processing benchmarks...");
+                const parsedBenchmarks = parseBenchmarkCSVData(csvBenchmarkText);
+                if (!parsedBenchmarks || Object.keys(parsedBenchmarks).length === 0) {
+                    addValidationMessage('warning', "No valid benchmark data found or processed. Using default fallback benchmarks.");
+                    // Proceed without benchmarks or use defaults? For now, proceed and handle missing benchmarks later.
+                } else {
+                     benchmarkData = parsedBenchmarks;
+                     addValidationMessage('success', `Successfully processed ${Object.keys(benchmarkData).length} weeks of benchmark data.`);
+                }
+                
+                showLoading("Processing clinic data...");
+                const parsedData = parseCSVData(csvDataText);
+                if (!parsedData || parsedData.length === 0) {
+                    throw new Error("No valid clinic data found or processed from the Data sheet.");
+                }
+                addValidationMessage('success', `Successfully processed ${parsedData.length} clinic data entries.`);
+                
+                showLoading("Calculating alerts and trends...");
+                processAndStoreData(parsedData); // Pass benchmarkData implicitly (it's global)
+                
+                if (availableWeeks.length === 0) {
+                     throw new Error("No valid weekly data could be processed after applying benchmarks and validation.");
+                }
+
+                // Set initial time period to the latest week
+                currentWeekData = getDataForWeek(latestWeek.year, latestWeek.week);
+                displayedData = currentWeekData;
+
+                // Update UI elements
+                populateTimePeriodFilter();
+                populateClinicOptions();
+                populateWeekSelectors(); // For comparison tab
+                updateSummaryCards(displayedData);
+                populateTable(displayedData);
+                populateCardView(displayedData);
+                updateLastUpdated();
+                updateHistoricalCharts(); // Initial chart draw
+                enableControls(); // Enable UI controls now that data is loaded
+                
+                console.log("Dashboard Initialized Successfully.");
+                // displayValidationMessages(); // Validation messages hidden on success
+                hideLoading();
+
+            } catch (error) {
+                console.error("Dashboard Initialization Failed:", error);
+                addValidationMessage('error', `Initialization Failed: ${error.message}`);
+                displayValidationMessages();
+                hideLoading(`Error: ${error.message}`);
+                disableControls(); // Keep controls disabled on error
+            }
+        }
+
+        // Fetch data from a Google Sheet URL
+        async function fetchDataFromSheet(url, sheetName) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    // Provide more specific error based on status code
+                    let errorMsg = `Failed to fetch ${sheetName} sheet. Status: ${response.status} ${response.statusText}.`;
+                    if (response.status === 404) {
+                        errorMsg += " Please ensure the URL is correct and the sheet is published as CSV.";
+                    } else if (response.status === 403) {
+                         errorMsg += " Access denied. Ensure the sheet is published correctly ('Anyone with the link').";
+                    } else {
+                         errorMsg += " Check network connection and URL.";
+                    }
+                    throw new Error(errorMsg);
+                }
+                const csvText = await response.text();
+                if (!csvText || csvText.trim().length === 0) {
+                     throw new Error(`Fetched CSV data for ${sheetName} sheet is empty.`);
+                }
+                console.log(`${sheetName} CSV Data fetched successfully.`);
+                return csvText;
+            } catch (error) {
+                console.error(`Fetch Error (${sheetName}):`, error);
+                // Distinguish network errors from fetch failures
+                if (error instanceof TypeError) { // Likely a network error (e.g., CORS if run locally)
+                     throw new Error(`Network error fetching ${sheetName} sheet: ${error.message}. If running locally, try using a local server (e.g., 'python -m http.server').`);
+                } else {
+                     throw new Error(`Error fetching ${sheetName} sheet: ${error.message}`);
+                }
+            }
+        }
+        
+        // Robust CSV row parser (handles quoted commas)
+        function parseCsvRow(rowString) {
+            const values = [];
+            let currentVal = '';
+            let inQuotes = false;
+            for (let i = 0; i < rowString.length; i++) {
+                const char = rowString[i];
+                if (char === '"') {
+                    if (inQuotes && rowString[i+1] === '"') {
+                        // Escaped quote
+                        currentVal += '"';
+                        i++; // Skip next quote
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    values.push(currentVal.trim());
+                    currentVal = '';
+                } else {
+                    currentVal += char;
+                }
+            }
+            values.push(currentVal.trim()); // Add the last value
+            return values;
+        }
+
+        // Parse Clinic Data CSV text into an array of objects
+        function parseCSVData(csvText) {
+            console.log("Parsing Clinic Data CSV...");
+            const lines = csvText.trim().split(/\r?\n/);
+            if (lines.length < 2) {
+                addValidationMessage('error', "Clinic Data CSV Error: Must have at least a header row and one data row.");
+                return [];
+            }
+            
+            const headers = lines[0].split(',').map(h => h.trim());
+            console.log("Data CSV Headers:", headers);
+
+            // Validate headers
+            const missingHeaders = expectedDataCsvHeaders.filter(h => !headers.includes(h));
+            if (missingHeaders.length > 0) {
+                addValidationMessage('error', `Clinic Data CSV Error: Missing required columns: ${missingHeaders.join(', ')}.`);
+                // Continue parsing with available columns, but warn user
+            }
+            const extraHeaders = headers.filter(h => !expectedDataCsvHeaders.includes(h));
+             if (extraHeaders.length > 0) {
+                 addValidationMessage('warning', `Clinic Data CSV Warning: Found unexpected columns: ${extraHeaders.join(', ')}. These will be ignored.`);
+             }
+            
+            const data = [];
+            let skippedRowCount = 0;
+            for (let i = 1; i < lines.length; i++) {
+                const rowNum = i + 1;
+                if (!lines[i].trim()) continue; // Skip empty lines
+                
+                const values = parseCsvRow(lines[i]); 
+                if (values.length !== headers.length) {
+                     addValidationMessage('warning', `Clinic Data CSV Warning (Row ${rowNum}): Skipped row due to incorrect number of columns (${values.length} found, ${headers.length} expected). Line: '${lines[i]}'`);
+                     skippedRowCount++;
+                     continue;
+                }
+                
+                const entry = {};
+                let validEntry = true;
+                let rowErrors = [];
+                for (let j = 0; j < headers.length; j++) {
+                    const header = headers[j];
+                    // Only process expected headers
+                    if (!expectedDataCsvHeaders.includes(header)) continue;
+                    
+                    let value = values[j];
+                    
+                    // Basic type conversion and validation
+                    if (header === 'Week' || header === 'Year') {
+                        const num = parseInt(value);
+                        if (isNaN(num) || value.trim() === '') {
+                            rowErrors.push(`Invalid/missing value for ${header}: '${value}'`);
+                            validEntry = false;
+                            entry[header] = null; // Store as null
+                        } else {
+                            entry[header] = num;
+                        }
+                    } else if (header === 'Clinic' || header === 'AreaManagerNotesAlert') {
+                        if (!value || value.trim() === '') {
+                             if (header === 'Clinic') { // Clinic is essential
+                                 rowErrors.push(`Missing essential value for ${header}`);
+                                 validEntry = false;
+                             }
+                             entry[header] = null; // Allow missing alert
+                        } else {
+                             entry[header] = value; // Keep as string
+                        }
+                    } else {
+                        // Assume other metrics are numbers (handle empty strings/non-numeric as null)
+                        const num = parseFloat(value);
+                        if (value.trim() === '') {
+                             entry[header] = null; // Treat empty as null
+                        } else if (isNaN(num)) {
+                             rowErrors.push(`Invalid non-numeric value for metric ${header}: '${value}'`);
+                             entry[header] = null; // Treat invalid number as null
+                             // Don't mark entry as invalid, just the value
+                        } else {
+                             entry[header] = num;
+                        }
+                    }
+                }
+                
+                // Check for essential fields (Clinic, Week, Year)
+                if (!entry['Clinic'] || entry['Week'] === null || entry['Year'] === null) {
+                     validEntry = false;
+                     rowErrors.push("Missing essential Clinic, Week, or Year");
+                }
+                
+                if (validEntry) {
+                     if (rowErrors.length > 0) {
+                         // Add entry but log warnings for specific fields
+                         addValidationMessage('warning', `Clinic Data CSV Warning (Row ${rowNum}, Clinic: ${entry['Clinic'] || 'N/A'}): Processed row with issues: ${rowErrors.join('; ')}.`);
+                     }
+                     data.push(entry);
+                } else {
+                     addValidationMessage('warning', `Clinic Data CSV Warning (Row ${rowNum}): Skipped row due to critical errors: ${rowErrors.join('; ')}.`);
+                     skippedRowCount++;
+                }
+            }
+            console.log(`Parsed ${data.length} valid data entries. Skipped ${skippedRowCount} rows.`);
+            if (skippedRowCount > 0) {
+                 addValidationMessage('warning', `Skipped ${skippedRowCount} rows in the Clinic Data sheet due to formatting or missing essential data (Clinic, Week, Year). See console or validation messages for details.`);
+            }
+            if (data.length === 0 && lines.length > 1) {
+                 addValidationMessage('error', "Clinic Data CSV Error: No valid data rows could be processed. Check sheet format and ensure Clinic, Week, and Year columns are present and valid.");
+            }
+            return data;
+        }
+        
+        // Parse Benchmark CSV text into an object keyed by 'Year-Week'
+        function parseBenchmarkCSVData(csvText) {
+            console.log("Parsing Benchmark CSV...");
+            const benchmarks = {};
+            const lines = csvText.trim().split(/\r?\n/);
+            if (lines.length < 2) {
+                addValidationMessage('warning', "Benchmark CSV Warning: Sheet must have at least a header row and one data row. Using default benchmarks.");
+                return {};
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            console.log("Benchmark CSV Headers:", headers);
+
+            // Validate headers - check for Year, Week, and expected metric/flag columns
+            const requiredBaseHeaders = ['Year', 'Week'];
+            const missingBase = requiredBaseHeaders.filter(h => !headers.includes(h));
+            if (missingBase.length > 0) {
+                 addValidationMessage('error', `Benchmark CSV Error: Missing required columns: ${missingBase.join(', ')}. Cannot process benchmarks.`);
+                 return {};
+            }
+            
+            const expectedMetrics = metricsDefinition.map(m => m.id.charAt(0).toUpperCase() + m.id.slice(1));
+            const expectedFlags = metricsDefinition.map(m => m.id.charAt(0).toUpperCase() + m.id.slice(1) + '_HigherIsBetter');
+            const missingMetrics = expectedMetrics.filter(h => !headers.includes(h));
+            const missingFlags = expectedFlags.filter(h => !headers.includes(h));
+            
+            if (missingMetrics.length > 0) {
+                 addValidationMessage('warning', `Benchmark CSV Warning: Missing benchmark value columns: ${missingMetrics.join(', ')}. Alerts for these metrics may be inaccurate.`);
+            }
+             if (missingFlags.length > 0) {
+                 addValidationMessage('warning', `Benchmark CSV Warning: Missing '_HigherIsBetter' flag columns: ${missingFlags.join(', ')}. Default direction (higher is better) will be assumed for these metrics.`);
+            }
+            const extraHeaders = headers.filter(h => !requiredBaseHeaders.includes(h) && !expectedMetrics.includes(h) && !expectedFlags.includes(h));
+             if (extraHeaders.length > 0) {
+                 addValidationMessage('warning', `Benchmark CSV Warning: Found unexpected columns: ${extraHeaders.join(', ')}. These will be ignored.`);
+             }
+
+            let skippedRowCount = 0;
+            for (let i = 1; i < lines.length; i++) {
+                const rowNum = i + 1;
+                if (!lines[i].trim()) continue; // Skip empty lines
+
+                const values = parseCsvRow(lines[i]);
+                if (values.length !== headers.length) {
+                    addValidationMessage('warning', `Benchmark CSV Warning (Row ${rowNum}): Skipped row due to incorrect number of columns (${values.length} found, ${headers.length} expected). Line: '${lines[i]}'`);
+                    skippedRowCount++;
+                    continue;
+                }
+
+                const entry = {};
+                let year = NaN, week = NaN;
+                let rowErrors = [];
+
+                for (let j = 0; j < headers.length; j++) {
+                    const header = headers[j];
+                    const value = values[j];
+
+                    if (header === 'Year') {
+                        year = parseInt(value);
+                        if (isNaN(year) || value.trim() === '') rowErrors.push("Invalid/missing Year");
+                    } else if (header === 'Week') {
+                        week = parseInt(value);
+                        if (isNaN(week) || value.trim() === '') rowErrors.push("Invalid/missing Week");
+                    } else if (expectedMetrics.includes(header)) {
+                        // Benchmark value - should be number
+                        const num = parseFloat(value);
+                        if (value.trim() === '') {
+                             entry[header] = null; // Allow missing benchmark
+                        } else if (isNaN(num)) {
+                             rowErrors.push(`Invalid non-numeric benchmark for ${header}: '${value}'`);
+                             entry[header] = null;
+                        } else {
+                             entry[header] = num;
+                        }
+                    } else if (expectedFlags.includes(header)) {
+                        // HigherIsBetter flag - should be TRUE/FALSE
+                        const flag = value.trim().toUpperCase();
+                        if (flag === 'TRUE') {
+                            entry[header] = true;
+                        } else if (flag === 'FALSE') {
+                            entry[header] = false;
+                        } else {
+                             rowErrors.push(`Invalid boolean value for ${header}: '${value}' (expected TRUE or FALSE)`);
+                             entry[header] = null; // Default to null if invalid
+                        }
+                    }
+                    // Ignore extra headers
+                }
+
+                if (!isNaN(year) && !isNaN(week)) {
+                    const key = `${year}-W${week}`;
+                    if (rowErrors.length > 0) {
+                         addValidationMessage('warning', `Benchmark CSV Warning (Row ${rowNum}, Week: ${key}): Processed row with issues: ${rowErrors.join('; ')}.`);
+                    }
+                    benchmarks[key] = entry;
+                } else {
+                    addValidationMessage('warning', `Benchmark CSV Warning (Row ${rowNum}): Skipped row due to missing/invalid Year or Week: ${rowErrors.join('; ')}.`);
+                    skippedRowCount++;
+                }
+            }
+            console.log(`Parsed ${Object.keys(benchmarks).length} valid benchmark weeks. Skipped ${skippedRowCount} rows.`);
+             if (skippedRowCount > 0) {
+                 addValidationMessage('warning', `Skipped ${skippedRowCount} rows in the Benchmark sheet due to formatting or missing Year/Week. See console or validation messages for details.`);
+            }
+            if (Object.keys(benchmarks).length === 0 && lines.length > 1) {
+                 addValidationMessage('warning', "Benchmark CSV Warning: No valid benchmark rows could be processed. Default benchmarks will be used.");
+            }
+            return benchmarks;
+        }
+
+        // Process parsed data: calculate alerts, trends, group by clinic/week
+        function processAndStoreData(parsedData) {
+            console.log("Processing and storing data with dynamic benchmarks...");
+            allClinicsData = {};
+            availableWeeks = [];
+            const weekSet = new Set();
+            let processedEntryCount = 0;
+
+            // Group data by clinic
+            parsedData.forEach(entry => {
+                const clinicName = entry.Clinic;
+                if (!allClinicsData[clinicName]) {
+                    allClinicsData[clinicName] = [];
+                }
+                allClinicsData[clinicName].push(entry);
+                
+                // Track available weeks
+                const weekKey = `${entry.Year}-W${entry.Week}`;
+                if (!weekSet.has(weekKey)) {
+                    weekSet.add(weekKey);
+                    availableWeeks.push({ year: entry.Year, week: entry.Week });
+                }
+            });
+
+            // Sort available weeks chronologically
+            availableWeeks.sort((a, b) => {
+                if (a.year !== b.year) return a.year - b.year;
+                return a.week - b.week;
+            });
+            
+            if (availableWeeks.length > 0) {
+                latestWeek = availableWeeks[availableWeeks.length - 1];
+                if (availableWeeks.length > 1) {
+                    previousWeek = availableWeeks[availableWeeks.length - 2];
+                }
+            }
+            console.log("Latest Week:", latestWeek, "Previous Week:", previousWeek);
+
+            // Calculate alerts and trends for each entry using dynamic benchmarks
+            Object.keys(allClinicsData).forEach(clinicName => {
+                // Sort each clinic's history chronologically
+                allClinicsData[clinicName].sort((a, b) => {
+                    if (a.Year !== b.Year) return a.Year - b.Year;
+                    return a.Week - b.Week;
+                });
+
+                // Calculate alerts and trends
+                allClinicsData[clinicName].forEach((entry, index) => {
+                    const prevEntry = index > 0 ? allClinicsData[clinicName][index - 1] : null;
+                    const weekKey = `${entry.Year}-W${entry.Week}`;
+                    const weeklyBenchmarks = benchmarkData[weekKey]; // Get benchmarks for this specific week
+                    
+                    if (!weeklyBenchmarks) {
+                         addValidationMessage('warning', `Missing benchmarks for week ${weekKey}. Using fallback defaults for clinic ${clinicName}.`);
+                    }
+                    
+                    let overallAlertCounts = { critical: 0, high: 0, low: 0, normal: 0 };
+                    let trendImproving = 0;
+                    let trendWorsening = 0;
+                    let trendStable = 0;
+
+                    // Handle AreaManagerNotesAlert first (no benchmark needed)
+                    const notesAlertRaw = entry['AreaManagerNotesAlert'];
+                    const notesAlert = (notesAlertRaw && ['critical', 'high', 'low', 'normal'].includes(notesAlertRaw.toLowerCase())) 
+                                       ? notesAlertRaw.toLowerCase() : 'normal'; // Default to normal if missing/invalid
+                    entry['areaManagerNotesAlertLevel'] = notesAlert; // Store the calculated level
+                    overallAlertCounts[notesAlert]++;
+                    trendStable++; // No trend for notes alert
+
+                    // Process other metrics defined in metricsDefinition
+                    metricsDefinition.forEach(metric => {
+                        const metricId = metric.id;
+                        const csvHeader = metricId.charAt(0).toUpperCase() + metricId.slice(1);
+                        const value = entry[csvHeader]; // Get value from Data sheet
+                        
+                        // Get benchmark and direction from Benchmark sheet for this week
+                        const benchmarkValue = weeklyBenchmarks ? weeklyBenchmarks[csvHeader] : null;
+                        const higherIsBetterFlag = weeklyBenchmarks ? weeklyBenchmarks[csvHeader + '_HigherIsBetter'] : null;
+                        // Fallback: Assume higher is better if flag is missing/invalid (could refine this)
+                        const higherIsBetter = (higherIsBetterFlag === null || higherIsBetterFlag === undefined) ? true : higherIsBetterFlag;
+                        
+                        // Calculate alert level using dynamic benchmark
+                        entry[metricId + 'Alert'] = getAlertLevel(value, benchmarkValue, higherIsBetter, metricId);
+                        
+                        // Calculate trend compared to previous week
+                        if (prevEntry && prevEntry[csvHeader] !== null && value !== null) {
+                            const prevValue = prevEntry[csvHeader];
+                            if (value > prevValue) entry[metricId + 'Trend'] = 'up';
+                            else if (value < prevValue) entry[metricId + 'Trend'] = 'down';
+                            else entry[metricId + 'Trend'] = 'same';
+                        } else {
+                            entry[metricId + 'Trend'] = 'same'; // Default trend if no previous data or current data is null
+                        }
+                        
+                        // Count alerts for overall calculation
+                        if (entry[metricId + 'Alert']) {
+                             overallAlertCounts[entry[metricId + 'Alert']]++;
+                        }
+                        
+                        // Count trends for weekly trend calculation
+                        if (entry[metricId + 'Trend'] === 'up') {
+                            higherIsBetter ? trendImproving++ : trendWorsening++;
+                        } else if (entry[metricId + 'Trend'] === 'down') {
+                             higherIsBetter ? trendWorsening++ : trendImproving++;
+                        } else {
+                            trendStable++;
+                        }
+                    });
+
+                    // Determine overall alert level
+                    if (overallAlertCounts.critical > 0) entry.overallAlert = 'critical';
+                    else if (overallAlertCounts.high > 0) entry.overallAlert = 'high';
+                    else if (overallAlertCounts.low > 0) entry.overallAlert = 'low';
+                    else entry.overallAlert = 'normal';
+                    
+                    // Determine weekly trend
+                    if (trendImproving > trendWorsening) entry.weeklyTrend = 'improving';
+                    else if (trendWorsening > trendImproving) entry.weeklyTrend = 'worsening';
+                    else entry.weeklyTrend = 'stable';
+                    
+                    processedEntryCount++;
+                });
+            });
+            console.log(`Data processing complete. Processed ${processedEntryCount} entries.`);
+        }
+        
+        // Get all data for a specific week
+        function getDataForWeek(year, week) {
+            const weekData = [];
+            Object.keys(allClinicsData).forEach(clinicName => {
+                const entry = allClinicsData[clinicName].find(d => d.Year === year && d.Week === week);
+                if (entry) {
+                    weekData.push(entry);
+                }
+            });
+            return weekData;
+        }
+
+        // --- Helper Functions ---
+
+        // Function to get trend arrow symbol
+        function getTrendArrow(trend) {
+            switch (trend) {
+                case 'up': return '▲';
+                case 'down': return '▼';
+                case 'same': return '▬';
+                default: return '';
+            }
+        }
+
+        // Helper function to determine alert level using DYNAMIC benchmarks and custom deviation thresholds
+        function getAlertLevel(value, target, higherIsBetter, metricId) { // higherIsBetter might not be needed for this logic
+            // Handle missing data or missing benchmarks gracefully
+            if (value === null || value === undefined) return 'normal'; 
+            if (target === null || target === undefined) {
+                 console.warn(`Missing benchmark for metric '${metricId}' for the relevant week. Alert level defaulted to 'normal'.`); // Log to console instead of UI
+                 return 'normal'; 
+            }
+
+            const benchmarkValue = parseFloat(target);
+            const metricValue = parseFloat(value);
+
+            // Check for invalid numbers or zero benchmark (avoid division by zero)
+            if (isNaN(benchmarkValue) || isNaN(metricValue) || benchmarkValue === 0) {
+                console.warn(`Invalid value or zero benchmark for metric '${metricId}' (Value: ${value}, Benchmark: ${target}). Alert level defaulted to 'normal'.`);
+                return 'normal';
+            }
+
+            // Calculate absolute percentage deviation
+            const deviationPercent = Math.abs((metricValue - benchmarkValue) / benchmarkValue) * 100;
+
+            // Apply new alert thresholds based on deviation percentage
+            if (deviationPercent <= 5) {
+                return 'normal';
+            } else if (deviationPercent <= 10) { // > 5% and <= 10%
+                return 'slight';
+            } else if (deviationPercent <= 20) { // > 10% and <= 20%
+                return 'low';
+            } else if (deviationPercent <= 30) { // > 20% and <= 30%
+                return 'high';
+            } else { // > 30%
+                return 'critical';
+            }
+        }
+        
+        // Helper to get color based on alert level
+        function getAlertColor(alertLevel) {
+            switch(alertLevel) {
+                case 'critical': return '#e74c3c';
+                case 'high': return '#f39c12';
+                case 'low': return '#f1c40f';
+                case 'normal': return '#27ae60';
+                default: return '#95a5a6'; // Default grey
+            }
+        }
+        
+        // --- Validation Message Handling ---
+        function addValidationMessage(type, message) {
+            validationMessages.push({ type, message });
+            console.log(`Validation (${type}): ${message}`);
+        }
+
+        function displayValidationMessages() {
+            const section = document.getElementById('validationSection');
+            const list = document.getElementById('validationMessages');
+            if (!section || !list) return;
+
+            list.innerHTML = ''; // Clear previous messages
+            if (validationMessages.length === 0) {
+                list.innerHTML = '<li class="success">Data and benchmarks loaded successfully with no issues detected.</li>';
+            } else {
+                validationMessages.forEach(msg => {
+                    const item = document.createElement('li');
+                    item.classList.add(msg.type); // Add class 'error', 'warning', or 'success'
+                    item.textContent = msg.message;
+                    list.appendChild(item);
+                });
+            }
+            section.style.display = 'block'; // Show the section
+        }
+
+        // --- UI Initialization & Update Functions ---
+        
+        function initializeDatePickers() {
+             $(function() {
+                $('#dateRangePicker').daterangepicker({
+                    startDate: dateRange.start,
+                    endDate: dateRange.end,
+                    opens: 'left',
+                    ranges: {
+                       'Last 4 Weeks': [moment().subtract(4, 'weeks'), moment()],
+                       'Last 8 Weeks': [moment().subtract(8, 'weeks'), moment()],
+                       'Last 3 Months': [moment().subtract(3, 'months'), moment()],
+                       'Last 6 Months': [moment().subtract(6, 'months'), moment()],
+                       'Year to Date': [moment().startOf('year'), moment()],
+                       'Last Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')]
+                    }
+                }, function(start, end, label) {
+                    dateRange.start = start;
+                    dateRange.end = end;
+                    updateHistoricalCharts();
+                });
+
+                $('#compareRangePicker1, #compareRangePicker2').daterangepicker({
+                    singleDatePicker: false,
+                    opens: 'left',
+                     ranges: {
+                       'Last Week': [moment().subtract(1, 'week').startOf('week'), moment().subtract(1, 'week').endOf('week')],
+                       'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                       'Last Quarter': [moment().subtract(1, 'quarter').startOf('quarter'), moment().subtract(1, 'quarter').endOf('quarter')]
+                    }
+                });
+            });
+        }
+        
+        // Populate metric selector buttons in historical tab
+        function populateMetricSelector() {
+            const selectorDiv = document.getElementById('metricSelector');
+            selectorDiv.innerHTML = ''; // Clear existing
+            metricsDefinition.forEach((metric, index) => {
+                // if (metric.type === 'text') return; // Already filtered in definition
+                const button = document.createElement('button');
+                button.dataset.metric = metric.id;
+                button.textContent = metric.name;
+                if (metric.id === selectedMetric) {
+                    button.classList.add('active');
+                }
+                button.addEventListener('click', function() {
+                    selectMetric(this.dataset.metric);
+                });
+                selectorDiv.appendChild(button);
+            });
+        }
+        
+        // Populate time period filter (Current/Previous Week)
+        function populateTimePeriodFilter() {
+            const selector = document.getElementById('timePeriodFilter');
+            selector.innerHTML = ''; // Clear existing
+            
+            if (latestWeek.year > 0) {
+                 const optionCurrent = document.createElement('option');
+                 optionCurrent.value = 'current';
+                 optionCurrent.textContent = `Current (W${latestWeek.week}, ${latestWeek.year})`;
+                 selector.appendChild(optionCurrent);
+            }
+            if (previousWeek.year > 0) {
+                 const optionPrevious = document.createElement('option');
+                 optionPrevious.value = 'previous';
+                 optionPrevious.textContent = `Previous (W${previousWeek.week}, ${previousWeek.year})`;
+                 selector.appendChild(optionPrevious);
+            }
+            selector.value = 'current'; // Default to current
+        }
+
+        // Populate clinic filter options in all relevant dropdowns
+        function populateClinicOptions() {
+            const clinicNames = Object.keys(allClinicsData).sort();
+            const selectors = [
+                document.getElementById('clinicFilter'),
+                document.getElementById('clinicSelector'),
+                document.getElementById('compareClinicSelectorW2W'),
+                document.getElementById('compareClinicSelector4W'),
+                document.getElementById('compareClinicSelectorCR')
+            ];
+            
+            selectors.forEach(selector => {
+                if (!selector) return;
+                const currentValue = selector.value;
+                // Clear existing options except the first one ('All Clinics')
+                while (selector.options.length > 1) {
+                    selector.remove(1);
+                }
+                // Add clinic options
+                clinicNames.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    selector.appendChild(option);
+                });
+                // Restore previous selection if possible
+                if (clinicNames.includes(currentValue)) {
+                    selector.value = currentValue;
+                } else {
+                    selector.value = 'all'; // Default to 'all'
+                }
+            });
+        }
+
+        // Populate week selector options for comparison tab
+        function populateWeekSelectors() {
+            const selectors = [
+                document.getElementById('compareWeek1'),
+                document.getElementById('compareWeek2'),
+                document.getElementById('compareWeek3'),
+                document.getElementById('compareWeek4')
+            ];
+            
+            selectors.forEach((selector, index) => {
+                if (!selector) return;
+                selector.innerHTML = ''; // Clear existing options
+                availableWeeks.forEach(week => {
+                    const option = document.createElement('option');
+                    option.value = `${week.year}-W${week.week}`;
+                    option.textContent = `W${week.week}, ${week.year}`;
+                    selector.appendChild(option);
+                });
+                // Set default selected week (e.g., last 4 weeks)
+                const defaultIndex = Math.max(0, availableWeeks.length - 1 - index);
+                 if (availableWeeks.length > defaultIndex) {
+                    selector.selectedIndex = defaultIndex;
+                }
+            });
+        }
+
+        // Update summary cards based on the provided data array
+        function updateSummaryCards(data) {
+            const summaryCardsContainer = document.getElementById('summaryCards');
+            if (!data || data.length === 0) {
+                 summaryCardsContainer.innerHTML = '<div class="summary-card"><p>No data available for the selected period/filters.</p></div>';
+                 return;
+            }
+            
+            const alertCounts = { critical: 0, high: 0, low: 0, normal: 0 };
+            data.forEach(clinic => {
+                 alertCounts[clinic.overallAlert]++;
+            });
+            
+            const summaryCardsHTML = `
+                <div class="summary-card">
+                    <h3>Critical Alerts</h3>
+                    <div class="number critical">${alertCounts.critical}</div>
+                    <div>Require Immediate Action</div>
+                </div>
+                <div class="summary-card">
+                    <h3>High Alerts</h3>
+                    <div class="number high">${alertCounts.high}</div>
+                    <div>Need Attention</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Low Alerts</h3>
+                    <div class="number low">${alertCounts.low}</div>
+                    <div>Monitor Closely</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Normal Performance</h3>
+                    <div class="number normal">${alertCounts.normal}</div>
+                    <div>Meeting Targets</div>
+                </div>
+            `;
+            summaryCardsContainer.innerHTML = summaryCardsHTML;
+        }
+        
+        // Update the 'Last Updated' timestamp
+        function updateLastUpdated() {
+            const lastUpdatedDiv = document.getElementById('lastUpdated');
+            if (latestWeek.year > 0) {
+                 const currentMoment = moment();
+                 lastUpdatedDiv.textContent = `Data Loaded: ${currentMoment.format('MMM D, YYYY HH:mm')} | Latest Data: Week ${latestWeek.week}, ${latestWeek.year}`;
+            } else {
+                 lastUpdatedDiv.textContent = 'No data loaded.';
+            }
+        }
+
+        // Populate table with data
+        function populateTable(data) {
+            const tbody = document.getElementById('tableBody');
+            const title = document.getElementById('tableTitle');
+            if (!tbody) { console.error("Table body not found!"); return; }
+            tbody.innerHTML = ''; // Clear previous rows
+            
+            const timePeriod = document.getElementById('timePeriodFilter').value;
+            const weekInfo = (timePeriod === 'current' && latestWeek.year > 0) ? latestWeek : previousWeek;
+            title.textContent = `Clinic Performance Overview - Week ${weekInfo.week || 'N/A'}, ${weekInfo.year || 'N/A'}`;
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="23" style="text-align: center;">No data available for the selected filters.</td></tr>'; // Updated colspan
+                return;
+            }
+
+            data.forEach(clinic => {
+                const row = document.createElement('tr');
+                const notesAlert = clinic['areaManagerNotesAlertLevel'] || 'normal'; // Use processed level
+                
+                row.innerHTML = `
+                    <td class="clinic-name">${clinic.Clinic}</td>
+                    <!-- AreaManagerNotes removed -->
+                    <td><span class="alert-badge alert-${notesAlert}">${notesAlert.toUpperCase()}</span></td> <!-- Manual Alert Cell -->
+                    ${generateMetricCell(clinic, 'newPatients')}
+                    ${generateMetricCell(clinic, 'visitsTarget')}
+                    ${generateMetricCell(clinic, 'dailyDistribution')}
+                    ${generateMetricCell(clinic, 'utilization')}
+                    ${generateMetricCell(clinic, 'retention2nd')}
+                    ${generateMetricCell(clinic, 'retention5th')}
+                    ${generateMetricCell(clinic, 'retention10th')}
+                    ${generateMetricCell(clinic, 'retention15th')}
+                    ${generateMetricCell(clinic, 'cancel')}
+                    ${generateMetricCell(clinic, 'noShow')}
+                    ${generateMetricCell(clinic, 'noUpcoming')}
+                    ${generateMetricCell(clinic, 'units')}
+                    ${generateMetricCell(clinic, 'insuranceCoding')}
+                    ${generateMetricCell(clinic, 'supportiveCoding')}
+                    ${generateMetricCell(clinic, 'confirmation')}
+                    ${generateMetricCell(clinic, 'directAccess')}
+                    ${generateMetricCell(clinic, 'surveyCollection')}
+                    ${generateMetricCell(clinic, 'satisfaction')}
+                    <td class="metric-value">
+                        <span class="alert-badge alert-${clinic.overallAlert}">${clinic.overallAlert.toUpperCase()}</span>
+                    </td>
+                    <td class="metric-value">
+                        ${clinic.weeklyTrend || 'N/A'}
+                    </td>
+                    <td>
+                        <button class="action-button" onclick="showDetails('${clinic.Clinic}')">Details</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Helper to generate HTML for a metric table cell (Handles CSV header case)
+        function generateMetricCell(clinicData, metricId) {
+            const metricDef = metricsDefinition.find(m => m.id === metricId);
+            if (!metricDef) return '<td>Error</td>';
+
+            // Use correct CSV header case (e.g., NewPatients)
+            const csvHeader = metricId.charAt(0).toUpperCase() + metricId.slice(1);
+            const value = clinicData[csvHeader];
+            const alert = clinicData[metricId + 'Alert'] || 'normal';
+            const trend = clinicData[metricId + 'Trend'] || 'same';
+            
+            // Get dynamic benchmark for display
+            const weekKey = `${clinicData.Year}-W${clinicData.Week}`;
+            const weeklyBenchmarks = benchmarkData[weekKey];
+            const target = weeklyBenchmarks ? weeklyBenchmarks[csvHeader] : null;
+            
+            let displayValue = 'N/A';
+            let targetText = '';
+
+            if (value !== null && value !== undefined) {
+                displayValue = metricDef.type === 'percentage' ? `${value}%` : value;
+            }
+            
+            if (target !== null && target !== undefined) {
+                 targetText = metricDef.type === 'percentage' ? `Target: ${target}%` : `Target: ${target}`;
+            } else {
+                 targetText = 'Target: N/A'; // Indicate if benchmark is missing
+            }
+
+            return `
+                <td class="metric-value">
+                    ${displayValue}
+                    <span class="alert-badge alert-${alert}">${alert.toUpperCase()}</span>
+                    <span class="trend-arrow trend-${trend}">${getTrendArrow(trend)}</span>
+                    <div class="deviation">${targetText}</div>
+                </td>
+            `;
+        }
+
+        // Populate card view
+        function populateCardView(data) {
+            const cardContainer = document.getElementById('cardView');
+            if (!cardContainer) return;
+            cardContainer.innerHTML = '';
+
+             if (!data || data.length === 0) {
+                cardContainer.innerHTML = '<p style="text-align: center; grid-column: 1 / -1;">No data available for the selected filters.</p>';
+                return;
+            }
+
+            data.forEach(clinic => {
+                const notesAlert = clinic['areaManagerNotesAlertLevel'] || 'normal';
+                card = document.createElement('div');
+                card.className = 'summary-card'; // Reuse summary card style
+                card.innerHTML = `
+                    <h3 class="clinic-name">${clinic.Clinic}</h3>
+                    <div class="number ${clinic.overallAlert}">${clinic.overallAlert.toUpperCase()}</div>
+                    <div>Overall Status</div>
+                    <p style="font-size: 0.8em; margin-top: 10px;">Trend: ${clinic.weeklyTrend || 'N/A'}</p>
+                    <p style="font-size: 0.8em; margin-top: 5px;">Notes Alert: <span class="alert-badge alert-${notesAlert}">${notesAlert.toUpperCase()}</span></p>
+                     <button class="action-button" style="margin-top: 15px;" onclick="showDetails('${clinic.Clinic}')">Details</button>
+                `;
+                cardContainer.appendChild(card);
+            });
+        }
+        
+        // Enable controls after data load
+        function enableControls() {
+            document.querySelectorAll('.controls select, .controls input, .controls button, .view-toggle button, .tab-buttons button, .comparison-controls select, .comparison-controls input, .comparison-controls button, #dateRangePicker, #compareRangePicker1, #compareRangePicker2').forEach(el => el.disabled = false);
+        }
+        
+        // Disable controls on error or before data load
+        function disableControls() {
+             document.querySelectorAll('.controls select, .controls input, .controls button, .view-toggle button, .tab-buttons button, .comparison-controls select, .comparison-controls input, .comparison-controls button, #dateRangePicker, #compareRangePicker1, #compareRangePicker2').forEach(el => el.disabled = true);
+        }
+
+        // --- Event Handlers & Filters ---
+
+        // Filter table based on selected alert level, clinic, and search input
+        function filterTable() {
+            if (availableWeeks.length === 0) return; // Don't filter if no data loaded
+            
+            const alertFilter = document.getElementById('alertFilter').value;
+            const clinicFilter = document.getElementById('clinicFilter').value;
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const timePeriod = document.getElementById('timePeriodFilter').value;
+
+            const sourceData = (timePeriod === 'current') ? getDataForWeek(latestWeek.year, latestWeek.week) : getDataForWeek(previousWeek.year, previousWeek.week);
+
+            displayedData = sourceData.filter(clinic => {
+                const matchesAlert = alertFilter === 'all' || clinic.overallAlert === alertFilter;
+                const matchesClinic = clinicFilter === 'all' || clinic.Clinic === clinicFilter;
+                const matchesSearch = clinic.Clinic.toLowerCase().includes(searchInput);
+                return matchesAlert && matchesClinic && matchesSearch;
+            });
+
+            // Re-populate table and card view based on filtered data
+            if (currentView === 'table') {
+                 populateTable(displayedData);
+            } else {
+                 populateCardView(displayedData);
+            }
+           
+            // Update summary cards based on the filtered data
+            updateSummaryCards(displayedData);
+        }
+
+        // Change time period (Current Week / Previous Week)
+        function changeTimePeriod() {
+             if (availableWeeks.length === 0) return;
+             const timePeriod = document.getElementById('timePeriodFilter').value;
+             currentWeekData = (timePeriod === 'current') ? getDataForWeek(latestWeek.year, latestWeek.week) : getDataForWeek(previousWeek.year, previousWeek.week);
+             filterTable(); // Re-apply filters for the new time period
+        }
+
+        // Toggle between Table and Card view
+        function toggleView(view) {
+            currentView = view;
+            const tableView = document.getElementById('tableView');
+            const cardView = document.getElementById('cardView');
+            const viewButtons = document.querySelectorAll('.view-toggle button');
+
+            if (view === 'table') {
+                tableView.style.display = 'block';
+                cardView.style.display = 'none';
+                viewButtons[0].classList.add('active');
+                viewButtons[1].classList.remove('active');
+                populateTable(displayedData); // Ensure table is populated
+            } else {
+                tableView.style.display = 'none';
+                cardView.style.display = 'grid'; // Use grid for card layout
+                viewButtons[0].classList.remove('active');
+                viewButtons[1].classList.add('active');
+                populateCardView(displayedData); // Ensure cards are populated
+            }
+        }
+
+        // Switch between main tabs (Current Data, Historical, Comparison)
+        function switchTab(event, tabId) {
+            const tabContents = document.querySelectorAll('.tab-content');
+            const tabButtons = document.querySelectorAll('.tab-button');
+
+            tabContents.forEach(content => content.classList.remove('active'));
+            tabButtons.forEach(button => button.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+
+            // If switching to historical tab, update charts
+            if (tabId === 'historicalTrends' && availableWeeks.length > 0) {
+                updateHistoricalCharts();
+            }
+        }
+
+        // Show clinic details panel
+        function showDetails(clinicName) {
+            const panel = document.getElementById('detailsPanel');
+            const title = document.getElementById('detailsTitle');
+            const content = document.getElementById('detailsContent');
+            
+            const timePeriod = document.getElementById('timePeriodFilter').value;
+            const sourceData = (timePeriod === 'current') ? getDataForWeek(latestWeek.year, latestWeek.week) : getDataForWeek(previousWeek.year, previousWeek.week);
+            const clinicData = sourceData.find(c => c.Clinic === clinicName);
+
+            if (!clinicData) {
+                content.innerHTML = '<p>Clinic data not found for the selected period.</p>';
+                panel.classList.add('open');
+                return;
+            }
+
+            title.textContent = `${clinicName} - Details (Week ${clinicData.Week}, ${clinicData.Year})`;
+            const notesAlert = clinicData['areaManagerNotesAlertLevel'] || 'normal';
+            const weekKey = `${clinicData.Year}-W${clinicData.Week}`;
+            const weeklyBenchmarks = benchmarkData[weekKey];
+            
+            let detailsHTML = `<h4>Overall Alert: <span class="alert-badge alert-${clinicData.overallAlert}">${clinicData.overallAlert.toUpperCase()}</span></h4>`;
+            // AreaManagerNotes removed
+            detailsHTML += `<p><strong>Notes Alert Level:</strong> <span class="alert-badge alert-${notesAlert}">${notesAlert.toUpperCase()}</span></p>`;
+            detailsHTML += `<p><strong>Weekly Trend:</strong> ${clinicData.weeklyTrend || 'N/A'}</p>`;
+            detailsHTML += `<hr style="margin: 15px 0;">`;
+            detailsHTML += `<h4>Metric Details:</h4>`;
+            detailsHTML += `<div class="metric-grid">`;
+
+            metricsDefinition.forEach(metric => {
+                 // if (metric.id === 'areaManagerNotes') return; // Already removed
+
+                 const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
+                 const value = clinicData[csvHeader];
+                 const alert = clinicData[metric.id + 'Alert'] || 'normal';
+                 const trend = clinicData[metric.id + 'Trend'] || 'same';
+                 const target = weeklyBenchmarks ? weeklyBenchmarks[csvHeader] : null;
+                 let displayValue = 'N/A';
+                 let targetText = '';
+
+                 if (value !== null && value !== undefined) {
+                     displayValue = metric.type === 'percentage' ? `${value}%` : value;
+                 }
+                 if (target !== null && target !== undefined) {
+                     targetText = metric.type === 'percentage' ? `Target: ${target}%` : `Target: ${target}`;
+                 } else {
+                     targetText = 'Target: N/A';
+                 }
+
+                 detailsHTML += `
+                    <div class="metric-item">
+                        <strong>${metric.name}:</strong> ${displayValue}
+                        <span class="alert-badge alert-${alert}" style="float: right;">${alert.toUpperCase()}</span>
+                        <br>
+                        <span style="font-size: 0.9em; color: #555;">
+                            Trend: <span class="trend-arrow trend-${trend}">${getTrendArrow(trend)}</span> ${trend}
+                            | ${targetText}
+                        </span>
+                    </div>
+                 `;
+            });
+
+            detailsHTML += `</div>`;
+            detailsHTML += `<hr style="margin: 15px 0;"><h4>Historical Trend (${metricsDefinition.find(m=>m.id===selectedMetric)?.name || selectedMetric}):</h4>`;
+            detailsHTML += `<div id="detailTrendChart" style="width: 100%; height: 250px;">Loading chart...</div>`;
+
+            content.innerHTML = detailsHTML;
+            panel.classList.add('open');
+
+            // Draw chart in the details panel after it's open
+            setTimeout(() => drawDetailTrendChart(clinicName), 50); // Small delay for rendering
+        }
+
+        // Close clinic details panel
+        function closeDetails() {
+            document.getElementById('detailsPanel').classList.remove('open');
+        }
+
+        // --- Historical Data Tab Functions ---
+
+        // Update charts based on selected clinic and metric
+        function updateHistoricalCharts() {
+            if (!google.visualization || !google.visualization.DataTable) {
+                 console.warn("Google Visualization not ready yet.");
+                 return;
+            }
+            if (Object.keys(allClinicsData).length === 0) {
+                 document.getElementById('trendChart').innerHTML = '<p>Load data first.</p>';
+                 document.getElementById('comparisonChart').innerHTML = '';
+                 return;
+            }
+            
+            console.log(`Updating historical charts for Clinic: ${selectedClinic}, Metric: ${selectedMetric}`);
+            showLoading("Updating charts...");
+            
+            const clinicHistory = selectedClinic === 'all' 
+                ? averageHistoricalData() // Get averaged data across all clinics
+                : allClinicsData[selectedClinic];
+
+            if (!clinicHistory || clinicHistory.length === 0) {
+                document.getElementById('trendChart').innerHTML = '<p>No historical data available for this selection.</p>';
+                document.getElementById('comparisonChart').innerHTML = '';
+                hideLoading();
+                return;
+            }
+
+            // Filter data by date range picker
+            const filteredData = clinicHistory.filter(d => {
+                // Use Year and Week from data
+                const weekMoment = moment().year(d.Year).isoWeek(d.Week);
+                return weekMoment.isBetween(dateRange.start, dateRange.end, 'day', '[]'); // Inclusive
+            }).sort((a, b) => {
+                 if (a.Year !== b.Year) return a.Year - b.Year;
+                 return a.Week - b.Week;
+            }); // Ensure sorted by week
+
+            if (filteredData.length === 0) {
+                document.getElementById('trendChart').innerHTML = '<p>No data available for the selected date range.</p>';
+                 document.getElementById('comparisonChart').innerHTML = '';
+                 hideLoading();
+                return;
+            }
+
+            // Prepare data for Trend Chart (Selected Metric over Time)
+            const trendData = new google.visualization.DataTable();
+            trendData.addColumn('string', 'Week');
+            const metricDef = metricsDefinition.find(m => m.id === selectedMetric);
+            const metricName = metricDef?.name || selectedMetric;
+            const csvHeader = selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1);
+            trendData.addColumn('number', metricName);
+            trendData.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+            trendData.addColumn({type: 'string', role: 'style'}); // For alert colors
+
+            filteredData.forEach(d => {
+                const weekLabel = `W${d.Week}, ${d.Year}`;
+                const value = d[csvHeader];
+                const alertLevel = d[selectedMetric + 'Alert'] || 'normal';
+                const color = getAlertColor(alertLevel);
+                const displayValue = (value !== null && value !== undefined) ? (metricDef?.type === 'percentage' ? `${value}%` : value) : 'N/A';
+                const tooltip = `<div style="padding:10px;"><b>${weekLabel}</b><br>${metricName}: <b>${displayValue}</b><br>Alert: ${alertLevel.toUpperCase()}</div>`;
+                // Add row only if value is a number
+                if (typeof value === 'number') {
+                    trendData.addRow([weekLabel, value, tooltip, `point { fill-color: ${color}; }`]);
+                } else {
+                    // Handle null/missing values - add null to keep timeline, but no point/tooltip
+                    trendData.addRow([weekLabel, null, null, null]); 
+                }
+            });
+
+            const trendOptions = {
+                title: `${metricName} Trend for ${selectedClinic === 'all' ? 'All Clinics (Avg)' : selectedClinic}`,
+                curveType: 'function',
+                legend: { position: 'bottom' },
+                hAxis: { title: 'Week', slantedText: true, slantedTextAngle: 45 },
+                vAxis: { title: metricDef?.type === 'percentage' ? 'Value (%)' : 'Value' },
+                tooltip: { isHtml: true },
+                pointSize: 5,
+                connectSteps: false // Don't connect gaps for null values
+            };
+
+            // Use try/catch for chart drawing
+            try {
+                 if (!trendChart) {
+                    trendChart = new google.visualization.LineChart(document.getElementById('trendChart'));
+                 }
+                 trendChart.draw(trendData, trendOptions);
+            } catch (e) {
+                 console.error("Error drawing trend chart:", e);
+                 document.getElementById('trendChart').innerHTML = '<p style="color:red;">Error drawing trend chart.</p>';
+            }
+
+            // Prepare data for Comparison Chart (Snapshot of last week in range)
+            const lastWeekData = filteredData[filteredData.length - 1];
+            if (selectedClinic !== 'all' && lastWeekData) {
+                 const comparisonData = new google.visualization.DataTable();
+                 comparisonData.addColumn('string', 'Metric');
+                 comparisonData.addColumn('number', 'Value');
+                 comparisonData.addColumn({type: 'string', role: 'style'});
+                 comparisonData.addColumn({type: 'string', role: 'tooltip'});
+
+                 metricsDefinition.forEach(metric => {
+                     // if (metric.type !== 'text') { // Already filtered
+                         const mCsvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
+                         const value = lastWeekData[mCsvHeader];
+                         const alertLevel = lastWeekData[metric.id + 'Alert'] || 'normal';
+                         
+                         // Get dynamic benchmark for tooltip
+                         const weekKey = `${lastWeekData.Year}-W${lastWeekData.Week}`;
+                         const weeklyBenchmarks = benchmarkData[weekKey];
+                         const target = weeklyBenchmarks ? weeklyBenchmarks[mCsvHeader] : null;
+                         let targetText = '';
+                         if (target !== null && target !== undefined) {
+                             targetText = metric.type === 'percentage' ? `Target: ${target}%` : `Target: ${target}`;
+                         } else {
+                             targetText = 'Target: N/A';
+                         }
+                         
+                         const tooltip = `${metric.name}: ${metric.type === 'percentage' ? value+'%' : value} (${alertLevel.toUpperCase()})\n${targetText}`;
+                         // Add row only if value is a number
+                         if (typeof value === 'number') {
+                             comparisonData.addRow([metric.name, value, getAlertColor(alertLevel), tooltip]);
+                         }
+                     // }
+                 });
+                 
+                 const comparisonOptions = {
+                    title: `Metric Snapshot for ${selectedClinic} (Week ${lastWeekData.Week}, ${lastWeekData.Year})`,
+                    legend: { position: 'none' },
+                    bars: 'horizontal', 
+                    hAxis: { title: 'Value' },
+                    vAxis: { title: 'Metric' },
+                    tooltip: { trigger: 'focus' } // Show tooltip on hover/focus
+                 };
+                 
+                 try {
+                     if (!comparisonChart) {
+                         comparisonChart = new google.visualization.BarChart(document.getElementById('comparisonChart'));
+                     }
+                     comparisonChart.draw(comparisonData, comparisonOptions);
+                 } catch (e) {
+                     console.error("Error drawing comparison chart:", e);
+                     document.getElementById('comparisonChart').innerHTML = '<p style="color:red;">Error drawing comparison chart.</p>';
+                 }
+
+            } else {
+                 document.getElementById('comparisonChart').innerHTML = '<p>Select a specific clinic to see a snapshot comparison.</p>';
+            }
+
+            hideLoading();
+        }
+        
+        // Helper function to average historical data across all clinics for each week
+        function averageHistoricalData() {
+            const averagedData = [];
+            availableWeeks.forEach(weekInfo => {
+                const clinicsForWeek = Object.values(allClinicsData)
+                                           .map(clinicHistory => clinicHistory.find(d => d.Year === weekInfo.year && d.Week === weekInfo.week))
+                                           .filter(Boolean); // Filter out clinics with no data for that week
+                if (clinicsForWeek.length > 0) {
+                    const avgWeekData = averageClinicData(clinicsForWeek, weekInfo.year, weekInfo.week); // Pass week info for benchmark lookup
+                    avgWeekData.Year = weekInfo.year;
+                    avgWeekData.Week = weekInfo.week;
+                    averagedData.push(avgWeekData);
+                }
+            });
+            return averagedData;
+        }
+
+        // Handle selection of metric in historical tab
+        function selectMetric(metricId) {
+            selectedMetric = metricId;
+            // Update active button style
+            document.querySelectorAll('#metricSelector button').forEach(button => {
+                button.classList.toggle('active', button.dataset.metric === metricId);
+            });
+            updateHistoricalCharts();
+            // Update detail chart if panel is open
+            if (document.getElementById('detailsPanel').classList.contains('open')) {
+                 const clinicName = document.getElementById('detailsTitle').textContent.split(' - ')[0];
+                 if (clinicName && clinicName !== 'Clinic Details') {
+                     drawDetailTrendChart(clinicName);
+                 }
+            }
+        }
+
+        // Handle selection of clinic in historical tab
+        document.getElementById('clinicSelector').addEventListener('change', function() {
+            selectedClinic = this.value;
+            updateHistoricalCharts();
+        });
+
+        // Draw simple trend chart in details panel
+        function drawDetailTrendChart(clinicName) {
+             if (!google.visualization || !google.visualization.DataTable) return;
+             const detailChartDiv = document.getElementById('detailTrendChart');
+             if (!detailChartDiv) return;
+             
+             const clinicHistory = allClinicsData[clinicName];
+             if (!clinicHistory) {
+                 detailChartDiv.innerHTML = '<p>Historical data not found.</p>';
+                 return;
+             }
+
+             const filteredData = clinicHistory.filter(d => {
+                const weekMoment = moment().year(d.Year).isoWeek(d.Week);
+                return weekMoment.isBetween(dateRange.start, dateRange.end, 'day', '[]');
+            }).sort((a, b) => {
+                 if (a.Year !== b.Year) return a.Year - b.Year;
+                 return a.Week - b.Week;
+            });
+
+             if (filteredData.length === 0) {
+                 detailChartDiv.innerHTML = '<p>No data in selected range.</p>';
+                 return;
+             }
+
+             const detailData = new google.visualization.DataTable();
+             detailData.addColumn('string', 'Week');
+             const metricDef = metricsDefinition.find(m => m.id === selectedMetric);
+             const metricName = metricDef?.name || selectedMetric;
+             const csvHeader = selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1);
+             detailData.addColumn('number', metricName);
+             detailData.addColumn({type: 'string', role: 'style'});
+
+             filteredData.forEach(d => {
+                const weekLabel = `W${d.Week}`;
+                const value = d[csvHeader];
+                const alertLevel = d[selectedMetric + 'Alert'] || 'normal';
+                if (typeof value === 'number') {
+                    detailData.addRow([weekLabel, value, `point { fill-color: ${getAlertColor(alertLevel)}; }`]);
+                } else {
+                    detailData.addRow([weekLabel, null, null]);
+                }
+            });
+
+             const detailOptions = {
+                // title: `${metricName} Trend`,
+                legend: { position: 'none' },
+                hAxis: { textPosition: 'none' }, // Simpler axis for small chart
+                vAxis: { textPosition: 'none' },
+                chartArea: {width: '85%', height: '70%'},
+                pointSize: 3,
+                connectSteps: false
+            };
+            
+            try {
+                 const detailChart = new google.visualization.LineChart(detailChartDiv);
+                 detailChart.draw(detailData, detailOptions);
+            } catch (e) {
+                 console.error("Error drawing detail chart:", e);
+                 detailChartDiv.innerHTML = '<p style="color:red;">Error drawing chart.</p>';
+            }
+        }
+
+        // --- Comparison Tab Functions ---
+
+        // Switch between comparison types (Week-to-Week, 4 Weeks, Custom Ranges)
+        function switchComparisonType(event, type) {
+            // Update button styles
+            document.querySelectorAll('.comparison-type-selector button').forEach(button => {
+                button.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            // Show/hide relevant options sections
+            document.querySelectorAll('.comparison-options').forEach(section => {
+                section.classList.remove('active');
+            });
+            // Construct ID dynamically: comparisonOptions + CapitalizedType (removing hyphens)
+            const optionsId = 'comparisonOptions' + type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+            document.getElementById(optionsId).classList.add('active');
+            
+            // Clear previous results
+            document.getElementById('comparisonResults').innerHTML = '';
+        }
+
+        // Run the selected comparison
+        function runComparison(type) {
+            if (Object.keys(allClinicsData).length === 0) {
+                 alert("Please load data first.");
+                 return;
+            }
+            showLoading("Running comparison...");
+            console.log(`Running comparison type: ${type}`);
+            let comparisonHTML = `<h4>Comparison Results (${type})</h4>`;
+            let clinicName, data1, data2, week1Info, week2Info, week3Info, week4Info;
+
+            try {
+                switch (type) {
+                    case 'week-to-week':
+                        clinicName = document.getElementById('compareClinicSelectorW2W').value;
+                        week2Info = availableWeeks[availableWeeks.length - 1]; // Current week
+                        week1Info = availableWeeks[availableWeeks.length - 2]; // Previous week
+                        
+                        if (!week1Info || !week2Info) throw new Error("Not enough historical data (need at least 2 weeks).");
+
+                        data1 = getWeekData(clinicName, week1Info.year, week1Info.week);
+                        data2 = getWeekData(clinicName, week2Info.year, week2Info.week);
+                        
+                        comparisonHTML += `<p>Comparing Week ${week1Info.week}, ${week1Info.year} vs Week ${week2Info.week}, ${week2Info.year} for ${clinicName === 'all' ? 'All Clinics (Avg)' : clinicName}</p>`;
+                        comparisonHTML += generateComparisonTable(data1, data2, `W${week1Info.week}`, `W${week2Info.week}`, clinicName === 'all');
+                        break;
+
+                    case '4-weeks':
+                        clinicName = document.getElementById('compareClinicSelector4W').value;
+                        const week1Str = document.getElementById('compareWeek1').value;
+                        const week2Str = document.getElementById('compareWeek2').value;
+                        const week3Str = document.getElementById('compareWeek3').value;
+                        const week4Str = document.getElementById('compareWeek4').value;
+                        
+                        const weeksInfo = [week1Str, week2Str, week3Str, week4Str].map(parseWeekString);
+                        const weekData = weeksInfo.map(w => getWeekData(clinicName, w.year, w.week));
+                        const weekLabels = weeksInfo.map(w => `W${w.week}, ${w.year}`);
+
+                        comparisonHTML += `<p>Comparing Weeks: ${weekLabels.join(', ')} for ${clinicName === 'all' ? 'All Clinics (Avg)' : clinicName}</p>`;
+                        comparisonHTML += generateMultiComparisonTable(weekData, weekLabels, clinicName === 'all');
+                        break;
+
+                    case 'custom-ranges':
+                         clinicName = document.getElementById('compareClinicSelectorCR').value;
+                         const range1Picker = $('#compareRangePicker1').data('daterangepicker');
+                         const range2Picker = $('#compareRangePicker2').data('daterangepicker');
+                         
+                         if (!range1Picker || !range2Picker) throw new Error("Date range pickers not initialized.");
+                         
+                         const dataRange1 = getRangeData(clinicName, range1Picker.startDate, range1Picker.endDate);
+                         const dataRange2 = getRangeData(clinicName, range2Picker.startDate, range2Picker.endDate);
+
+                         const label1 = `${range1Picker.startDate.format('MMM D')} - ${range1Picker.endDate.format('MMM D, YYYY')}`;
+                         const label2 = `${range2Picker.startDate.format('MMM D')} - ${range2Picker.endDate.format('MMM D, YYYY')}`;
+
+                         comparisonHTML += `<p>Comparing Range: ${label1} vs ${label2} for ${clinicName === 'all' ? 'All Clinics (Avg)' : clinicName}</p>`;
+                         comparisonHTML += generateComparisonTable(dataRange1, dataRange2, label1, label2, true); // Indicate ranges are averaged
+                        break;
+
+                    default:
+                        comparisonHTML += '<p>Invalid comparison type selected.</p>';
+                }
+            } catch (error) {
+                console.error("Comparison Error:", error);
+                comparisonHTML += `<p style="color: red;">Error running comparison: ${error.message}</p>`;
+            }
+
+            document.getElementById('comparisonResults').innerHTML = comparisonHTML;
+            hideLoading();
+        }
+
+        // Helper to parse 'YYYY-Www' string
+        function parseWeekString(weekStr) {
+            const parts = weekStr.split('-W');
+            if (parts.length !== 2) return { year: NaN, week: NaN };
+            return { year: parseInt(parts[0]), week: parseInt(parts[1]) };
+        }
+
+        // Helper to get data for a specific week (or average for 'all')
+        function getWeekData(clinicName, year, week) {
+            if (clinicName === 'all') {
+                // Calculate average across all clinics for that week
+                const clinicsForWeek = Object.values(allClinicsData)
+                                           .map(clinicHistory => clinicHistory.find(d => d.Year === year && d.Week === week))
+                                           .filter(Boolean); // Filter out clinics with no data for that week
+                if (clinicsForWeek.length === 0) return null; // No data for any clinic this week
+                return averageClinicData(clinicsForWeek, year, week); // Pass week info
+            } else {
+                const clinicHistory = allClinicsData[clinicName];
+                return clinicHistory ? clinicHistory.find(d => d.Year === year && d.Week === week) : null;
+            }
+        }
+        
+        // Helper to get aggregated/averaged data for a date range
+        function getRangeData(clinicName, startDate, endDate) {
+             let dataInRange;
+             let weeksInRange = new Set(); // Track unique weeks in range
+             
+             if (clinicName === 'all') {
+                 // Get data for all clinics within the range
+                 dataInRange = Object.values(allClinicsData).flat().filter(d => {
+                     const weekMoment = moment().year(d.Year).isoWeek(d.Week);
+                     const isInRange = weekMoment.isBetween(startDate, endDate, 'day', '[]');
+                     if (isInRange) weeksInRange.add(`${d.Year}-W${d.Week}`);
+                     return isInRange;
+                 });
+             } else {
+                 const clinicHistory = allClinicsData[clinicName];
+                 if (!clinicHistory) return null;
+                 dataInRange = clinicHistory.filter(d => {
+                     const weekMoment = moment().year(d.Year).isoWeek(d.Week);
+                     const isInRange = weekMoment.isBetween(startDate, endDate, 'day', '[]');
+                     if (isInRange) weeksInRange.add(`${d.Year}-W${d.Week}`);
+                     return isInRange;
+                 });
+             }
+             
+             if (!dataInRange || dataInRange.length === 0) return null;
+             
+             // Average the data points within the range
+             // Pass the set of weeks to averageClinicData to look up relevant benchmarks
+             return averageClinicData(dataInRange, null, null, Array.from(weeksInRange));
+        }
+
+        // Helper function to average data from multiple clinic data objects
+        // Can average for a specific week OR a range of weeks
+        function averageClinicData(dataArray, specificYear = null, specificWeek = null, weekKeysInRange = null) {
+            if (!dataArray || dataArray.length === 0) return null;
+            const avgData = { Clinic: 'Average' }; 
+            avgData.Year = specificYear !== null ? specificYear : 'Range';
+            avgData.Week = specificWeek !== null ? specificWeek : 'Range';
+            const counts = {};
+            const alertCounts = { critical: 0, high: 0, low: 0, normal: 0 };
+
+            // Initialize sums and counts
+            metricsDefinition.forEach(metric => {
+                const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
+                avgData[csvHeader] = 0;
+                counts[csvHeader] = 0;
+            });
+            // Also handle notes alert averaging (e.g., count occurrences)
+            avgData['AreaManagerNotesAlert'] = { critical: 0, high: 0, low: 0, normal: 0 };
+
+            // Sum values and count valid entries
+            dataArray.forEach(clinic => {
+                metricsDefinition.forEach(metric => {
+                    const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
+                    const value = clinic[csvHeader];
+                    if (value !== null && value !== undefined && typeof value === 'number') {
+                        avgData[csvHeader] += value;
+                        counts[csvHeader]++;
+                    }
+                });
+                // Count notes alerts
+                const notesAlert = clinic['areaManagerNotesAlertLevel'] || 'normal';
+                avgData['AreaManagerNotesAlert'][notesAlert]++;
+            });
+
+            // Calculate averages and determine average alert levels
+            metricsDefinition.forEach(metric => {
+                 const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
+                 const avgValue = counts[csvHeader] > 0 ? parseFloat((avgData[csvHeader] / counts[csvHeader]).toFixed(1)) : null;
+                 avgData[csvHeader] = avgValue;
+                 
+                 // Determine alert for the average value
+                 if (avgValue !== null) {
+                     // Need benchmark for the specific week/range
+                     let target = null;
+                     let higherIsBetter = true; // Default
+                     let benchmarkSourceWeekKey = null;
+                     
+                     if (specificYear !== null && specificWeek !== null) {
+                         benchmarkSourceWeekKey = `${specificYear}-W${specificWeek}`;
+                     } else if (weekKeysInRange && weekKeysInRange.length > 0) {
+                         // For ranges, maybe use the benchmark from the *last* week in the range?
+                         // Or average benchmarks? For simplicity, use last week's benchmark.
+                         const sortedWeeks = weekKeysInRange.sort((a, b) => {
+                              const [yA, wA] = a.split('-W').map(Number);
+                              const [yB, wB] = b.split('-W').map(Number);
+                              if (yA !== yB) return yA - yB;
+                              return wA - wB;
+                         });
+                         benchmarkSourceWeekKey = sortedWeeks[sortedWeeks.length - 1];
+                     }
+                     
+                     const weeklyBenchmarks = benchmarkSourceWeekKey ? benchmarkData[benchmarkSourceWeekKey] : null;
+                     if (weeklyBenchmarks) {
+                         target = weeklyBenchmarks[csvHeader];
+                         const flag = weeklyBenchmarks[csvHeader + '_HigherIsBetter'];
+                         higherIsBetter = (flag === null || flag === undefined) ? true : flag;
+                     }
+                     
+                     avgData[metric.id + 'Alert'] = getAlertLevel(avgValue, target, higherIsBetter, metric.id);
+                 } else {
+                     avgData[metric.id + 'Alert'] = 'normal';
+                 }
+                 alertCounts[avgData[metric.id + 'Alert']]++; // Count alerts based on average
+            });
+            
+            // Determine overall alert for the average
+            if (alertCounts.critical > 0) avgData.overallAlert = 'critical';
+            else if (alertCounts.high > 0) avgData.overallAlert = 'high';
+            else if (alertCounts.low > 0) avgData.overallAlert = 'low';
+            else avgData.overallAlert = 'normal';
+            
+            // Determine the most frequent notes alert level for the average
+            let maxCount = 0;
+            let dominantNotesAlert = 'normal';
+            for (const level in avgData['AreaManagerNotesAlert']) {
+                 if (avgData['AreaManagerNotesAlert'][level] > maxCount) {
+                     maxCount = avgData['AreaManagerNotesAlert'][level];
+                     dominantNotesAlert = level;
+                 }
+            }
+            avgData['areaManagerNotesAlertLevel'] = dominantNotesAlert;
+            delete avgData['AreaManagerNotesAlert']; // Remove the count object
+
+            // Note: Trends are not averaged meaningfully here.
+            avgData.weeklyTrend = 'N/A'; 
+            return avgData;
+        }
+
+        // Generate HTML table for comparing two data points/ranges
+        function generateComparisonTable(data1, data2, label1, label2, isAverage = false) {
+            let tableHTML = `<table class="comparison-table">
+                                <thead>
+                                    <tr><th>Metric</th><th>${label1} ${isAverage ? '(Avg)' : ''}</th><th>${label2} ${isAverage ? '(Avg)' : ''}</th><th>Change</th></tr>
+                                </thead>
+                                <tbody>`;
+
+            if (!data1 || !data2) {
+                return '<p>Comparison data is missing for one or both periods.</p>';
+            }
+
+            // Handle Notes Alert separately
+            const notesAlert1 = data1['areaManagerNotesAlertLevel'] || 'N/A';
+            const notesAlert2 = data2['areaManagerNotesAlertLevel'] || 'N/A';
+            tableHTML += `<tr>
+                            <td class="metric-name">Notes Alert</td>
+                            <td><span class="alert-badge alert-${notesAlert1}">${notesAlert1.toUpperCase()}</span></td>
+                            <td><span class="alert-badge alert-${notesAlert2}">${notesAlert2.toUpperCase()}</span></td>
+                            <td>${notesAlert1 === notesAlert2 ? 'Same' : 'Changed'}</td>
+                          </tr>`;
+
+            metricsDefinition.forEach(metric => {
+                // if (metric.type === 'text') return; // Already filtered
+
+                const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
+                const val1 = data1[csvHeader];
+                const val2 = data2[csvHeader];
+                let displayVal1 = 'N/A';
+                let displayVal2 = 'N/A';
+                let change = 'N/A';
+                let changeClass = '';
+                
+                // Need higherIsBetter flag (use benchmark from second period for consistency)
+                let higherIsBetter = true; // Default
+                const weekKey2 = `${data2.Year}-W${data2.Week}`;
+                const benchmark2 = data2.Year !== 'Range' ? benchmarkData[weekKey2] : null; // Get benchmark for period 2 if not a range
+                if (benchmark2) {
+                     const flag = benchmark2[csvHeader + '_HigherIsBetter'];
+                     higherIsBetter = (flag === null || flag === undefined) ? true : flag;
+                }
+
+                if (val1 !== null && val1 !== undefined) displayVal1 = metric.type === 'percentage' ? `${val1}%` : val1;
+                if (val2 !== null && val2 !== undefined) displayVal2 = metric.type === 'percentage' ? `${val2}%` : val2;
+
+                if (typeof val1 === 'number' && typeof val2 === 'number') {
+                    const diff = val2 - val1;
+                    change = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}${metric.type === 'percentage' ? '%' : ''}`;
+                    if (Math.abs(diff) > 0.01) { // Add a small threshold to avoid marking tiny changes
+                         if (diff > 0) changeClass = higherIsBetter ? 'change-positive' : 'change-negative';
+                         if (diff < 0) changeClass = higherIsBetter ? 'change-negative' : 'change-positive';
+                    }
+                }
+
+                tableHTML += `<tr>
+                                <td class="metric-name">${metric.name}</td>
+                                <td>${displayVal1}</td>
+                                <td>${displayVal2}</td>
+                                <td class="${changeClass}">${change}</td>
+                              </tr>`;
+            });
+
+            tableHTML += `</tbody></table>`;
+            return tableHTML;
+        }
+        
+        // Generate HTML table for comparing multiple data points (e.g., 4 weeks)
+        function generateMultiComparisonTable(dataArray, labels, isAverage = false) {
+             let tableHTML = `<table class="comparison-table">
+                                <thead>
+                                    <tr><th>Metric</th>`;
+             labels.forEach(label => tableHTML += `<th>${label} ${isAverage ? '(Avg)' : ''}</th>`);
+             tableHTML += `<th>Trend</th></tr></thead><tbody>`;
+
+             if (dataArray.some(d => !d)) {
+                 return '<p>Comparison data is missing for one or more periods.</p>';
+             }
+             
+             // Handle Notes Alert separately
+             tableHTML += `<tr><td class="metric-name">Notes Alert</td>`;
+             let notesAlerts = [];
+             dataArray.forEach(data => {
+                 const notesAlert = data['areaManagerNotesAlertLevel'] || 'N/A';
+                 tableHTML += `<td><span class="alert-badge alert-${notesAlert}">${notesAlert.toUpperCase()}</span></td>`;
+                 notesAlerts.push(notesAlert);
+             });
+             // Basic trend for notes (first vs last)
+             let notesTrend = 'N/A';
+             if (notesAlerts.length >= 2) {
+                 notesTrend = notesAlerts[0] === notesAlerts[notesAlerts.length - 1] ? 'Stable' : 'Changed';
+             }
+             tableHTML += `<td>${notesTrend}</td></tr>`;
+
+             metricsDefinition.forEach(metric => {
+                 // if (metric.type === 'text') return;
+
+                 tableHTML += `<tr><td class="metric-name">${metric.name}</td>`;
+                 let values = [];
+                 let higherIsBetter = true; // Default, use last period's benchmark
+                 const lastData = dataArray[dataArray.length - 1];
+                 const lastWeekKey = `${lastData.Year}-W${lastData.Week}`;
+                 const lastBenchmark = lastData.Year !== 'Range' ? benchmarkData[lastWeekKey] : null;
+                 if (lastBenchmark) {
+                      const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
+                      const flag = lastBenchmark[csvHeader + '_HigherIsBetter'];
+                      higherIsBetter = (flag === null || flag === undefined) ? true : flag;
+                 }
+                 
+                 dataArray.forEach(data => {
+                     const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
+                     const val = data[csvHeader];
+                     let displayVal = 'N/A';
+                     if (val !== null && val !== undefined) displayVal = metric.type === 'percentage' ? `${val}%` : val;
+                     tableHTML += `<td>${displayVal}</td>`;
+                     if (typeof val === 'number') values.push(val);
+                 });
+                 
+                 // Basic trend calculation (first vs last)
+                 let trend = 'N/A';
+                 let trendClass = '';
+                 if (values.length >= 2) {
+                     const diff = values[values.length - 1] - values[0];
+                     if (diff > 0.1) { trend = 'Improving'; trendClass = higherIsBetter ? 'change-positive' : 'change-negative'; }
+                     else if (diff < -0.1) { trend = 'Worsening'; trendClass = higherIsBetter ? 'change-negative' : 'change-positive'; }
+                     else { trend = 'Stable'; }
+                 }
+                 tableHTML += `<td class="${trendClass}">${trend}</td>`;
+                 tableHTML += `</tr>`;
+             });
+
+             tableHTML += `</tbody></table>`;
+             return tableHTML;
+        }
+
+        // --- Utility Functions ---
+
+        // Show loading overlay
+        function showLoading(message = "Loading...") {
+            document.getElementById('loadingMessage').textContent = message;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        // Hide loading overlay
+        function hideLoading(message = null) {
+             const overlay = document.getElementById('loadingOverlay');
+             const msgElement = document.getElementById('loadingMessage');
+             const spinner = overlay.querySelector('.spinner');
+             
+             if (message) {
+                 // Show message instead of hiding immediately
+                 msgElement.textContent = message;
+                 if (spinner) spinner.style.display = 'none';
+                 // Keep overlay visible briefly or until interaction if needed
+                 // setTimeout(() => { overlay.style.display = 'none'; }, 3000); // Example: hide after 3s
+             } else {
+                 overlay.style.display = 'none';
+                 if (spinner) spinner.style.display = 'block'; // Ensure spinner is visible next time
+             }
+        }
+
+        // Export currently filtered data to CSV
+        function exportData() {
+            console.log("Exporting data...");
+            if (!displayedData || displayedData.length === 0) {
+                alert("No data to export based on current filters.");
+                return;
+            }
+            showLoading("Preparing CSV export...");
+
+            // Use the updated expected headers for the DATA sheet
+            const headers = expectedDataCsvHeaders;
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
+
+            displayedData.forEach(clinic => {
+                let row = headers.map(header => {
+                    let value = clinic[header]; // Access data using the exact header string
+                    if (value === null || value === undefined) {
+                        return ''; // Represent null/undefined as empty string in CSV
+                    }
+                    // Enclose in quotes if value contains comma, quote, or newline; escape quotes
+                    value = String(value);
+                    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                        return `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                });
+                csvContent += row.join(",") + "\n";
+            });
+
+            // Create a link and trigger download
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            const timePeriod = document.getElementById('timePeriodFilter').value;
+            const weekInfo = (timePeriod === 'current' && latestWeek.year > 0) ? latestWeek : previousWeek;
+            link.setAttribute("download", `clinic_metrics_export_W${weekInfo.week}_${weekInfo.year}.csv`);
+            document.body.appendChild(link); // Required for Firefox
+            link.click();
+            document.body.removeChild(link);
+            hideLoading();
+            console.log("Export complete.");
+        }
+
+    </script>
+</body>
+</html>
+
