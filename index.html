@@ -1261,147 +1261,146 @@
 
         // Process parsed data: calculate alerts, trends, group by clinic/week
         function processAndStoreData(parsedData) {
-            console.log("Processing and storing data with dynamic benchmarks...");
-            allClinicsData = {};
-            availableWeeks = [];
-            const weekSet = new Set();
-            let processedEntryCount = 0;
+    console.log("Processing and storing data with dynamic benchmarks...");
+    allClinicsData = {};
+    availableWeeks = [];
+    const weekSet = new Set();
+    let processedEntryCount = 0;
 
-            // Group data by clinic
-            parsedData.forEach(entry => {
-                const clinicName = entry.Clinic;
-                if (!allClinicsData[clinicName]) {
-                    allClinicsData[clinicName] = [];
-                }
-                allClinicsData[clinicName].push(entry);
-                
-                // Track available weeks
-                const weekKey = `${entry.Year}-W${entry.Week}`;
-                if (!weekSet.has(weekKey)) {
-                    weekSet.add(weekKey);
-                    availableWeeks.push({ year: entry.Year, week: entry.Week });
-                }
-            });
-
-            // Sort available weeks chronologically
-            availableWeeks.sort((a, b) => {
-                if (a.year !== b.year) return a.year - b.year;
-                return a.week - b.week;
-            });
-            
-            if (availableWeeks.length > 0) {
-                latestWeek = availableWeeks[availableWeeks.length - 1];
-                if (availableWeeks.length > 1) {
-                    previousWeek = availableWeeks[availableWeeks.length - 2];
-                }
-            }
-            console.log("Latest Week:", latestWeek, "Previous Week:", previousWeek);
-
-            // Calculate alerts and trends for each entry using dynamic benchmarks
-            Object.keys(allClinicsData).forEach(clinicName => {
-                // Sort each clinic's history chronologically
-                allClinicsData[clinicName].sort((a, b) => {
-                    if (a.Year !== b.Year) return a.Year - b.Year;
-                    return a.Week - b.Week;
-                });
-
-                // Calculate alerts and trends
-                allClinicsData[clinicName].forEach((entry, index) => {
-                    const prevEntry = index > 0 ? allClinicsData[clinicName][index - 1] : null;
-                    const weekKey = `${entry.Year}-W${entry.Week}`;
-                    const weeklyBenchmarks = benchmarkData[weekKey]; // Get benchmarks for this specific week
-                    
-                    if (!weeklyBenchmarks) {
-                         addValidationMessage('warning', `Missing benchmarks for week ${weekKey}. Using fallback defaults for clinic ${clinicName}.`);
-                    }
-                    
-                    let overallAlertCounts = { critical: 0, high: 0, low: 0, normal: 0 };
-                    let trendImproving = 0;
-                    let trendWorsening = 0;
-                    let trendStable = 0;
-
-                    // Handle AreaManagerNotesAlert first (no benchmark needed)
-                    const notesAlertRaw = entry['AreaManagerNotesAlert'];
-                    const notesAlert = (notesAlertRaw && ['critical', 'high', 'low', 'normal'].includes(notesAlertRaw.toLowerCase())) 
-                                       ? notesAlertRaw.toLowerCase() : 'normal'; // Default to normal if missing/invalid
-                    entry['areaManagerNotesAlertLevel'] = notesAlert; // Store the calculated level
-                    overallAlertCounts[notesAlert]++;
-                    trendStable++; // No trend for notes alert
-
-                    // Process other metrics defined in metricsDefinition
-                    metricsDefinition.forEach(metric => {
-                        const metricId = metric.id;
-                        const csvHeader = metricId.charAt(0).toUpperCase() + metricId.slice(1);
-                        const value = entry[csvHeader]; // Get value from Data sheet
-                        
-                        // Get benchmark and direction from Benchmark sheet for this week
-                        const benchmarkValue = weeklyBenchmarks ? weeklyBenchmarks[csvHeader] : null;
-                        const higherIsBetterFlag = weeklyBenchmarks ? weeklyBenchmarks[csvHeader + '_HigherIsBetter'] : null;
-                        // Fallback: Assume higher is better if flag is missing/invalid (could refine this)
-                        const higherIsBetter = (higherIsBetterFlag === null || higherIsBetterFlag === undefined) ? true : higherIsBetterFlag;
-                        
-                        // Calculate alert level using dynamic benchmark
-                        entry[metricId + 'Alert'] = getAlertLevel(value, benchmarkValue, higherIsBetter, metricId);
-                        
-                        // Calculate trend compared to previous week
-                        if (prevEntry && prevEntry[csvHeader] !== null && value !== null) {
-                            const prevValue = prevEntry[csvHeader];
-                            if (value > prevValue) entry[metricId + 'Trend'] = 'up';
-                            else if (value < prevValue) entry[metricId + 'Trend'] = 'down';
-                            else entry[metricId + 'Trend'] = 'same';
-                        } else {
-                            entry[metricId + 'Trend'] = 'same'; // Default trend if no previous data or current data is null
-                        }
-                        
-                        // Count alerts for overall calculation
-                        if (entry[metricId + 'Alert']) {
-                             overallAlertCounts[entry[metricId + 'Alert']]++;
-                        }
-                        
-                        // Count trends for weekly trend calculation
-                        if (entry[metricId + 'Trend'] === 'up') {
-                            higherIsBetter ? trendImproving++ : trendWorsening++;
-                        } else if (entry[metricId + 'Trend'] === 'down') {
-                             higherIsBetter ? trendWorsening++ : trendImproving++;
-                        } else {
-                            trendStable++;
-                        }
-                    });
-
-                    // Determine overall alert level based on count of high or critical metrics
-                    let highOrCriticalCount = 0;
-                    if (notesAlert === 'high' || notesAlert === 'critical') {
-                        highOrCriticalCount++;
-                    }
-                    metricsDefinition.forEach(metric => {
-                        const alert = entry[metric.id + 'Alert'];
-                        if (alert === 'high' || alert === 'critical') {
-                            highOrCriticalCount++;
-                        }
-                    });
-                    if (highOrCriticalCount >= 8) {
-                        entry.overallAlert = 'critical';
-                    } else if (highOrCriticalCount >= 5) {
-                        entry.overallAlert = 'high';
-                    } else if (highOrCriticalCount >= 3) {
-                        entry.overallAlert = 'normal';
-                    } else if (highOrCriticalCount >= 1) {
-                        entry.overallAlert = 'low';
-                    } else {
-                        entry.overallAlert = 'normal';
-                    }
-                    
-                    // Determine weekly trend
-                    if (trendImproving > trendWorsening) entry.weeklyTrend = 'improving';
-                    else if (trendWorsening > trendImproving) entry.weeklyTrend = 'worsening';
-                    else entry.weeklyTrend = 'stable';
-                    
-                    processedEntryCount++;
-                });
-            });
-            console.log(`Data processing complete. Processed ${processedEntryCount} entries.`);
+    // Group data by clinic
+    parsedData.forEach(entry => {
+        const clinicName = entry.Clinic;
+        if (!allClinicsData[clinicName]) {
+            allClinicsData[clinicName] = [];
         }
+        allClinicsData[clinicName].push(entry);
         
+        // Track available weeks
+        const weekKey = `${entry.Year}-W${entry.Week}`;
+        if (!weekSet.has(weekKey)) {
+            weekSet.add(weekKey);
+            availableWeeks.push({ year: entry.Year, week: entry.Week });
+        }
+    });
+
+    // Sort available weeks chronologically
+    availableWeeks.sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year;
+        return a.week - b.week;
+    });
+    
+    if (availableWeeks.length > 0) {
+        latestWeek = availableWeeks[availableWeeks.length - 1];
+        if (availableWeeks.length > 1) {
+            previousWeek = availableWeeks[availableWeeks.length - 2];
+        }
+    }
+    console.log("Latest Week:", latestWeek, "Previous Week:", previousWeek);
+
+    // Calculate alerts and trends for each entry using dynamic benchmarks
+    Object.keys(allClinicsData).forEach(clinicName => {
+        // Sort each clinic's history chronologically
+        allClinicsData[clinicName].sort((a, b) => {
+            if (a.Year !== b.Year) return a.Year - b.Year;
+            return a.Week - b.Week;
+        });
+
+        // Calculate alerts and trends
+        allClinicsData[clinicName].forEach((entry, index) => {
+            const prevEntry = index > 0 ? allClinicsData[clinicName][index - 1] : null;
+            const weekKey = `${entry.Year}-W${entry.Week}`;
+            const weeklyBenchmarks = benchmarkData[weekKey]; // Get benchmarks for this specific week
+            
+            if (!weeklyBenchmarks) {
+                 addValidationMessage('warning', `Missing benchmarks for week ${weekKey}. Using fallback defaults for clinic ${clinicName}.`);
+            }
+            
+            let overallAlertCounts = { critical: 0, high: 0, low: 0, normal: 0 };
+            let trendImproving = 0;
+            let trendWorsening = 0;
+            let trendStable = 0;
+
+            // Handle AreaManagerNotesAlert first (no benchmark needed)
+            const notesAlertRaw = entry['AreaManagerNotesAlert'];
+            const notesAlert = (notesAlertRaw && ['critical', 'high', 'low', 'normal'].includes(notesAlertRaw.toLowerCase())) 
+                               ? notesAlertRaw.toLowerCase() : 'normal'; // Default to normal if missing/invalid
+            entry['areaManagerNotesAlertLevel'] = notesAlert; // Store the calculated level
+            overallAlertCounts[notesAlert]++;
+            trendStable++; // No trend for notes alert
+
+            // Process other metrics defined in metricsDefinition
+            metricsDefinition.forEach(metric => {
+                const metricId = metric.id;
+                const csvHeader = metricId.charAt(0).toUpperCase() + metricId.slice(1);
+                const value = entry[csvHeader]; // Get value from Data sheet
+                
+                // Get benchmark and direction from Benchmark sheet for this week
+                const benchmarkValue = weeklyBenchmarks ? weeklyBenchmarks[csvHeader] : null;
+                const higherIsBetterFlag = weeklyBenchmarks ? weeklyBenchmarks[csvHeader + '_HigherIsBetter'] : null;
+                // Fallback: Assume higher is better if flag is missing/invalid
+                const higherIsBetter = (higherIsBetterFlag === null || higherIsBetterFlag === undefined) ? true : higherIsBetterFlag;
+                
+                // Calculate alert level using dynamic benchmark
+                entry[metricId + 'Alert'] = getAlertLevel(value, benchmarkValue, higherIsBetter, metricId);
+                
+                // Calculate trend compared to previous week
+                if (prevEntry && prevEntry[csvHeader] !== null && value !== null) {
+                    const prevValue = prevEntry[csvHeader];
+                    if (value > prevValue) entry[metricId + 'Trend'] = 'up';
+                    else if (value < prevValue) entry[metricId + 'Trend'] = 'down';
+                    else entry[metricId + 'Trend'] = 'same';
+                } else {
+                    entry[metricId + 'Trend'] = 'same'; // Default trend if no previous data or current data is null
+                }
+                
+                // Count alerts for overall calculation
+                if (entry[metricId + 'Alert']) {
+                     overallAlertCounts[entry[metricId + 'Alert']]++;
+                }
+                
+                // Count trends for weekly trend calculation
+                if (entry[metricId + 'Trend'] === 'up') {
+                    higherIsBetter ? trendImproving++ : trendWorsening++;
+                } else if (entry[metricId + 'Trend'] === 'down') {
+                     higherIsBetter ? trendWorsening++ : trendImproving++;
+                } else {
+                    trendStable++;
+                }
+            });
+
+            // Determine overall alert level based on count of high or critical metrics
+            let highOrCriticalCount = 0;
+            if (notesAlert === 'high' || notesAlert === 'critical') {
+                highOrCriticalCount++;
+            }
+            metricsDefinition.forEach(metric => {
+                const alert = entry[metric.id + 'Alert'];
+                if (alert === 'high' || alert === 'critical') {
+                    highOrCriticalCount++;
+                }
+            });
+            if (highOrCriticalCount >= 8) {
+                entry.overallAlert = 'critical';
+            } else if (highOrCriticalCount >= 5) {
+                entry.overallAlert = 'high';
+            } else if (highOrCriticalCount >= 3) {
+                entry.overallAlert = 'normal';
+            } else if (highOrCriticalCount >= 1) {
+                entry.overallAlert = 'low';
+            } else {
+                entry.overallAlert = 'normal';
+            }
+            
+            // Determine weekly trend
+            if (trendImproving > trendWorsening) entry.weeklyTrend = 'improving';
+            else if (trendWorsening > trendImproving) entry.weeklyTrend = 'worsening';
+            else entry.weeklyTrend = 'stable';
+            
+            processedEntryCount++;
+        });
+    });
+    console.log(`Data processing complete. Processed ${processedEntryCount} entries.`);
+}
         // Get all data for a specific week
         function getDataForWeek(year, week) {
             const weekData = [];
