@@ -1378,11 +1378,17 @@
                         }
                     });
 
-                    // Determine overall alert level
-                    if (overallAlertCounts.critical > 0) entry.overallAlert = 'critical';
-                    else if (overallAlertCounts.high > 0) entry.overallAlert = 'high';
-                    else if (overallAlertCounts.low > 0) entry.overallAlert = 'low';
-                    else entry.overallAlert = 'normal';
+                    // Determine overall alert level based on count of high/critical metrics
+                    const highCriticalCount = overallAlertCounts.critical + overallAlertCounts.high;
+                    if (highCriticalCount >= 8) {
+                        entry.overallAlert = 'critical';
+                    } else if (highCriticalCount >= 6) { // 6 or 7
+                        entry.overallAlert = 'high';
+                    } else if (highCriticalCount >= 3) { // 3, 4, or 5
+                        entry.overallAlert = 'normal';
+                    } else { // 0, 1, or 2
+                        entry.overallAlert = 'low';
+                    }
                     
                     // Determine weekly trend
                     if (trendImproving > trendWorsening) entry.weeklyTrend = 'improving';
@@ -2666,4 +2672,3 @@
     </script>
 </body>
 </html>
-
