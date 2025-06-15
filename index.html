@@ -1435,30 +1435,48 @@
             }
 
             const benchmarkValue = parseFloat(target);
-            const metricValue = parseFloat(value);
+    const metricValue = parseFloat(value);
+    if (isNaN(benchmarkValue) || isNaN(metricValue) || benchmarkValue === 0) {
+        return 'normal';
+    }
 
-            // Check for invalid numbers or zero benchmark (avoid division by zero)
-            if (isNaN(benchmarkValue) || isNaN(metricValue) || benchmarkValue === 0) {
-                console.warn(`Invalid value or zero benchmark for metric '${metricId}' (Value: ${value}, Benchmark: ${target}). Alert level defaulted to 'normal'.`);
-                return 'normal';
-            }
+    // List of metrics to apply "only alert if higher than target"
+    const onlyAlertIfHigher = ['cancel', 'noShow', 'noUpcoming', 'directAccess'];
 
-            // Calculate absolute percentage deviation
-            const deviationPercent = Math.abs((metricValue - benchmarkValue) / benchmarkValue) * 100;
-
-            // Apply new alert thresholds based on deviation percentage
-            if (deviationPercent <= 5) {
-                return 'normal';
-            } else if (deviationPercent <= 10) { // > 5% and <= 10%
-                return 'slight';
-            } else if (deviationPercent <= 20) { // > 10% and <= 20%
-                return 'low';
-            } else if (deviationPercent <= 30) { // > 20% and <= 30%
-                return 'high';
-            } else { // > 30%
-                return 'critical';
-            }
+    // For these metrics, only show alert if value > target
+    if (onlyAlertIfHigher.includes(metricId)) {
+        if (metricValue <= benchmarkValue) {
+            return 'normal';
         }
+        // Only calculate alert if higher than target
+        const deviationPercent = ((metricValue - benchmarkValue) / benchmarkValue) * 100;
+        if (deviationPercent <= 5) {
+            return 'normal';
+        } else if (deviationPercent <= 10) {
+            return 'slight';
+        } else if (deviationPercent <= 20) {
+            return 'low';
+        } else if (deviationPercent <= 30) {
+            return 'high';
+        } else {
+            return 'critical';
+        }
+    }
+
+    // Default logic for other metrics
+    const deviationPercent = Math.abs((metricValue - benchmarkValue) / benchmarkValue) * 100;
+    if (deviationPercent <= 5) {
+        return 'normal';
+    } else if (deviationPercent <= 10) {
+        return 'slight';
+    } else if (deviationPercent <= 20) {
+        return 'low';
+    } else if (deviationPercent <= 30) {
+        return 'high';
+    } else {
+        return 'critical';
+    }
+}
         
         // Helper to get color based on alert level
         function getAlertColor(alertLevel) {
