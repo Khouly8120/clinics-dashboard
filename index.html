@@ -1000,26 +1000,36 @@
             });
         }
         
-        // Populate time period filter (Current/Previous Week)
-        function populateTimePeriodFilter() {
-            const selector = document.getElementById('timePeriodFilter');
-            selector.innerHTML = ''; // Clear existing
-            
-            if (latestWeek.year > 0) {
-                 const optionCurrent = document.createElement('option');
-                 optionCurrent.value = 'current';
-                 optionCurrent.textContent = `Current (${moment(latestWeek.date).format('MMM D, YYYY')})`;
-                 selector.appendChild(optionCurrent);
-            }
-            if (previousWeek.year > 0) {
-                 const optionPrevious = document.createElement('option');
-                 optionPrevious.value = 'previous';
-                 optionPrevious.textContent = `Previous (${moment(previousWeek.date).format('MMM D, YYYY')})`;
-                 selector.appendChild(optionPrevious);
-            }
-            selector.value = 'current'; // Default to current
-        }
+// This will create the time period filter dropdown using the actual 'Date of week' values from Data and Benchmark
+function populateTimePeriodFilter() {
+    const selector = document.getElementById('timePeriodFilter');
+    selector.innerHTML = ''; // Clear existing
 
+    // Collect all unique dates from Data and Benchmark
+    const allDataDates = Object.values(allClinicsData)
+        .flat()
+        .map(entry => entry["Date of week"])
+        .filter(Boolean);
+
+    const allBenchmarkDates = Object.values(benchmarkData)
+        .map(entry => entry["Date of week"])
+        .filter(Boolean);
+
+    const allDates = Array.from(new Set([...allDataDates, ...allBenchmarkDates]))
+        .sort((a, b) => new Date(b) - new Date(a)); // newest first
+
+    allDates.forEach(dateStr => {
+        const option = document.createElement('option');
+        option.value = dateStr;
+        option.textContent = moment(dateStr).format('MMM D, YYYY');
+        selector.appendChild(option);
+    });
+
+    // Default to latest date
+    if (allDates.length > 0) {
+        selector.value = allDates[0];
+    }
+}
         // Populate clinic filter options in all relevant dropdowns
         function populateClinicOptions() {
             const clinicNames = Object.keys(allClinicsData).sort();
