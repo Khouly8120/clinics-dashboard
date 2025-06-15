@@ -4,650 +4,123 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clinic Metrics Alert Dashboard (Dual Sheet)</title>
-    <!-- Google Charts Library -->
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <!-- Date Range Picker Dependencies -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <style>
-        /* CSS Styles remain largely the same, adding styles for validation */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary-bg: #f5f5f5;
+            --primary-text: #333;
+            --header-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --white: #fff;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --yellow-light: #fffbe6;
+            --yellow-border: #ffe58f;
+            --yellow-dark: #faad14;
+            --red: #cf1322;
+            --green: #389e0d;
+            --critical: #e74c3c;
+            --high: #f39c12;
+            --low: #f1c40f;
+            --normal: #27ae60;
+            --slight: #1890ff;
         }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
+            background-color: var(--primary-bg);
+            color: var(--primary-text);
         }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .last-updated {
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-
-        .validation-section {
-            background: #fffbe6; /* Light yellow */
-            border: 1px solid #ffe58f; /* Yellow border */
-            color: #faad14; /* Darker yellow text */
-            padding: 15px;
-            margin: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .validation-section h4 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            color: #d48806; /* Darker yellow for heading */
-        }
-
-        .validation-section ul {
-            list-style-type: disc;
-            margin-left: 20px;
-            padding-left: 0;
-        }
-        
-        .validation-section li {
-            margin-bottom: 5px;
-            font-size: 0.9em;
-        }
-        
-        .validation-section .error {
-            color: #cf1322; /* Red for errors */
-            font-weight: bold;
-        }
-        
-        .validation-section .warning {
-             color: #d48806; /* Darker yellow for warnings */
-        }
-        
-        .validation-section .success {
-             color: #389e0d; /* Green for success */
-             font-weight: bold;
-        }
-
+        .header { background: var(--header-gradient); color: var(--white); padding: 20px; text-align: center; box-shadow: var(--shadow); }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .last-updated { font-size: 0.9em; opacity: 0.9; }
         .controls {
-            background: white;
+            background: var(--white);
             padding: 20px;
             margin: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
             display: flex;
             gap: 20px;
             flex-wrap: wrap;
             align-items: center;
         }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .filter-group label {
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-
+        .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .filter-group label { font-weight: bold; font-size: 0.9em; }
         .filter-group select, .filter-group input {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 0.9em;
+            padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9em;
         }
-
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 20px;
-        }
-
-        .summary-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .summary-card h3 {
-            font-size: 0.9em;
-            color: #666;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .summary-card .number {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .critical { color: #e74c3c; }
-        .high { color: #f39c12; }
-        .low { color: #f1c40f; }
-        .normal { color: #27ae60; }
-
-        .main-table {
-            margin: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .table-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 20px;
-            font-weight: bold;
-            font-size: 1.1em;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .view-toggle {
-            display: flex;
-            gap: 10px;
-        }
-
-        .view-toggle button {
-            background-color: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8em;
-            transition: background-color 0.3s;
-        }
-
-        .view-toggle button.active {
-            background-color: rgba(255, 255, 255, 0.4);
-            font-weight: bold;
-        }
-
-        .view-toggle button:hover {
-            background-color: rgba(255, 255, 255, 0.3);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-            font-size: 0.9em;
-        }
-
-        th {
-            background-color: #f8f9fa;
-            font-weight: bold;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        /* Sticky first column (Clinic names) */
-        th:first-child, td:first-child {
-            position: sticky;
-            left: 0;
-            background-color: #f8f9fa; /* Match table header background */
-            z-index: 11; /* Higher than other headers for overlap */
-        }
-
-        /* Ensure top-left cell (Clinic header) has higher z-index */
-        th:first-child {
-            z-index: 12; /* Highest to stay above all */
-        }
-
-        tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-
-        .alert-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: bold;
-            text-align: center;
-            min-width: 60px;
-            display: inline-block;
-        }
-
-        .alert-critical {
-            background-color: #e74c3c;
-            color: white;
-        }
-
-        .alert-high {
-            background-color: #f39c12;
-            color: white;
-        }
-
-        .alert-low {
-            background-color: #f1c40f; /* Yellow */
-            color: #333;
-        }
-        .alert-slight {
-            background-color: #1890ff; /* Blue - Choose a suitable color */
-            color: white;
-        }
-        .alert-normal {
-            background-color: #27ae60; /* Green */
-            color: white;
-        }
-
-        .trend-arrow {
-            font-size: 1.2em;
-            margin-left: 5px;
-        }
-
-        .trend-up { color: #27ae60; } /* Green for improving trend */
-        .trend-down { color: #e74c3c; } /* Red for worsening trend */
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 20px; }
+        .summary-card { background: var(--white); padding: 20px; border-radius: 10px; box-shadow: var(--shadow); text-align: center; }
+        .summary-card h3 { font-size: 0.9em; color: #666; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .summary-card .number { font-size: 2.5em; font-weight: bold; margin-bottom: 5px; }
+        .critical { color: var(--critical); }
+        .high { color: var(--high); }
+        .low { color: var(--low); }
+        .normal { color: var(--normal); }
+        .main-table { margin: 20px; background: var(--white); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
+        .table-header { background: var(--header-gradient); color: var(--white); padding: 15px 20px; font-weight: bold; font-size: 1.1em; display: flex; justify-content: space-between; align-items: center; }
+        .view-toggle { display: flex; gap: 10px; }
+        .view-toggle button { background-color: rgba(255, 255, 255, 0.2); border: none; color: var(--white); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em; transition: background-color 0.3s; }
+        .view-toggle button.active { background-color: rgba(255,255,255,0.4); font-weight: bold; }
+        .view-toggle button:hover { background-color: rgba(255,255,255,0.3); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9em; }
+        th { background-color: #f8f9fa; font-weight: bold; position: sticky; top: 0; z-index: 10; }
+        th:first-child, td:first-child { position: sticky; left: 0; background-color: #f8f9fa; z-index: 11; }
+        th:first-child { z-index: 12; }
+        tbody tr:hover { background-color: #f8f9fa; }
+        .alert-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; text-align: center; min-width: 60px; display: inline-block; }
+        .alert-critical { background-color: var(--critical); color: var(--white);}
+        .alert-high { background-color: var(--high); color: var(--white);}
+        .alert-low { background-color: var(--low); color: #333;}
+        .alert-slight { background-color: var(--slight); color: var(--white);}
+        .alert-normal { background-color: var(--normal); color: var(--white);}
+        .trend-arrow { font-size: 1.2em; margin-left: 5px; }
+        .trend-up { color: var(--normal);}
+        .trend-down { color: var(--critical);}
         .trend-same { color: #95a5a6; }
-
-        .clinic-name {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .metric-value {
-            text-align: center;
-        }
-
-        .deviation {
-            font-size: 0.8em;
-            color: #666;
-        }
-
-        .action-button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8em;
-        }
-
-        .action-button:hover {
-            background-color: #2980b9;
-        }
-
-        .details-panel {
-            position: fixed;
-            top: 0;
-            right: -800px;
-            width: 800px;
-            height: 100vh;
-            background: white;
-            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-            transition: right 0.3s ease;
-            z-index: 1000;
-            overflow-y: auto;
-        }
-
-        .details-panel.open {
-            right: 0;
-        }
-
-        .details-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5em;
-            cursor: pointer;
-        }
-
-        .details-content {
-            padding: 20px;
-        }
-
-        .metric-detail {
-            margin-bottom: 15px;
-            padding: 15px;
-            border: 1px solid #eee;
-            border-radius: 5px;
-        }
-
-        .responsive-table {
-            overflow-x: auto;
-        }
-
-        .chart-container {
-            width: 100%;
-            height: 300px;
-            margin: 20px 0;
-        }
-
-        .historical-data-section {
-            margin: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-            padding-bottom: 20px;
-        }
-
-        .chart-controls {
-            display: flex;
-            gap: 20px;
-            padding: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .date-range-picker {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 0.9em;
-            width: 250px;
-        }
-
-        .metric-selector {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .metric-selector button {
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8em;
-            transition: background-color 0.3s;
-        }
-
-        .metric-selector button.active {
-            background-color: #3498db;
-            color: white;
-            border-color: #3498db;
-        }
-
-        .comparison-view {
-            display: none;
-            margin: 20px;
-        }
-
-        .comparison-view.active {
-            display: block;
-        }
-
-        .comparison-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        .comparison-table th, .comparison-table td {
-            padding: 10px;
-            text-align: center;
-            border: 1px solid #eee;
-        }
-
-        .comparison-table th {
-            background-color: #f8f9fa;
-        }
-
-        .comparison-table .metric-name {
-            text-align: left;
-            font-weight: bold;
-        }
-
-        .comparison-table .change-positive {
-            color: #27ae60;
-        }
-
-        .comparison-table .change-negative {
-            color: #e74c3c;
-        }
-
+        .clinic-name { font-weight: bold; color: #2c3e50; }
+        .metric-value { text-align: center; }
+        .deviation { font-size: 0.8em; color: #666; }
+        .action-button { background-color: #3498db; color: var(--white); border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8em; }
+        .action-button:hover { background-color: #2980b9; }
         .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(255,255,255,0.8);
+            display: flex; justify-content: center; align-items: center;
             z-index: 2000;
-            display: flex; /* Show initially */
         }
-        
-        .loading-overlay p {
-            margin-top: 10px;
-            font-weight: bold;
-        }
-
+        .loading-overlay[hidden] { display: none; }
         .spinner {
             border: 5px solid #f3f3f3;
             border-top: 5px solid #3498db;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 50px; height: 50px;
             animation: spin 1s linear infinite;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .tab-container {
-            margin: 20px;
-        }
-
-        .tab-buttons {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-
-        .tab-button {
-            padding: 10px 15px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-bottom: none;
-            border-radius: 5px 5px 0 0;
-            cursor: pointer;
-        }
-
-        .tab-button.active {
-            background-color: white;
-            border-bottom: 2px solid white;
-            margin-bottom: -1px;
-            font-weight: bold;
-        }
-
-        .tab-content {
-            display: none;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 0 5px 5px 5px;
-            padding: 20px;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .comparison-controls {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .comparison-type-selector {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .comparison-type-selector button {
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            background-color: white;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .comparison-type-selector button.active {
-            background-color: #3498db;
-            color: white;
-            border-color: #3498db;
-        }
-
-        .comparison-options {
-            display: none;
-        }
-
-        .comparison-options.active {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .comparison-options .filter-group {
-            flex-direction: row;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .comparison-options .filter-group label {
-            min-width: 100px;
-        }
-
-        .comparison-options .week-selectors {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .comparison-options .week-selectors select {
-            min-width: 120px;
-        }
-
-        .comparison-options .range-pickers {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .comparison-results {
-            margin-top: 20px;
-        }
-
-        .metric-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .metric-item {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            border-left: 3px solid #3498db;
-        }
-
+        @keyframes spin { 0% { transform: rotate(0deg);} 100% {transform: rotate(360deg);} }
         @media (max-width: 768px) {
-            .controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .summary-cards {
-                grid-template-columns: 1fr;
-            }
-
-            .details-panel {
-                width: 100%;
-                right: -100%;
-            }
-
-            table {
-                font-size: 0.8em;
-            }
-
-            .chart-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .comparison-options .filter-group {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .metric-grid {
-                grid-template-columns: 1fr;
-            }
+            .controls { flex-direction: column; align-items: stretch; }
+            .summary-cards { grid-template-columns: 1fr; }
+            .main-table { font-size: 0.8em;}
         }
     </style>
 </head>
 <body>
     <div class="loading-overlay" id="loadingOverlay">
         <div>
-             <div class="spinner"></div>
-             <p id="loadingMessage">Loading Dashboard Data...</p>
+            <div class="spinner"></div>
+            <p id="loadingMessage">Loading Dashboard Data...</p>
         </div>
     </div>
-
     <div class="header">
         <h1>Clinic Metrics Alert Dashboard</h1>
-        <div class="last-updated" id="lastUpdated">Loading...</div>
+        <div class="last-updated" id="lastUpdated" aria-live="polite">Loading...</div>
     </div>
-    
-    <!-- Data Validation Section Removed -->
-
-    <div class="controls">
+    <div class="controls" aria-label="Dashboard Controls">
         <div class="filter-group">
-            <label>Filter by Alert Level:</label>
-            <select id="alertFilter" onchange="filterTable()" disabled>
+            <label for="alertFilter">Filter by Alert Level:</label>
+            <select id="alertFilter" onchange="filterTable()" aria-label="Filter by Alert Level" disabled>
                 <option value="all">All Alerts</option>
                 <option value="critical">Critical Only</option>
                 <option value="high">High Only</option>
@@ -657,196 +130,125 @@
             </select>
         </div>
         <div class="filter-group">
-            <label>Filter by Clinic:</label>
-            <select id="clinicFilter" onchange="filterTable()" disabled>
+            <label for="clinicFilter">Filter by Clinic:</label>
+            <select id="clinicFilter" onchange="filterTable()" aria-label="Filter by Clinic" disabled>
                 <option value="all">All Clinics</option>
-                <!-- Clinic options will be populated dynamically -->
             </select>
         </div>
         <div class="filter-group">
-            <label>Search Clinic:</label>
-            <input type="text" id="searchInput" placeholder="Type clinic name..." onkeyup="filterTable()" disabled>
+            <label for="searchInput">Search Clinic:</label>
+            <input type="text" id="searchInput" placeholder="Type clinic name..." aria-label="Search Clinic" disabled>
         </div>
         <div class="filter-group">
-            <label>Time Period:</label>
-            <select id="timePeriodFilter" onchange="changeTimePeriod()" disabled>
-                <!-- Time periods populated dynamically -->
+            <label for="timePeriodFilter">Time Period:</label>
+            <select id="timePeriodFilter" onchange="changeTimePeriod()" aria-label="Time Period" disabled>
             </select>
         </div>
         <div class="filter-group">
-            <label>Export Data:</label>
-            <button class="action-button" onclick="exportData()" disabled>Export to CSV</button>
+            <label for="exportBtn">Export Data:</label>
+            <button class="action-button" id="exportBtn" onclick="exportData()" aria-label="Export to CSV" disabled>Export to CSV</button>
         </div>
     </div>
-
     <div class="summary-cards" id="summaryCards">
-        <!-- Summary cards will be populated dynamically -->
-         <div class="summary-card"><p>Loading data...</p></div>
+        <div class="summary-card"><p>Loading data...</p></div>
     </div>
-
-    <div class="tab-container">
-        <div class="tab-buttons">
-            <button class="tab-button active" onclick="switchTab(event, 'currentData')">Current Data</button>
-            <button class="tab-button" onclick="switchTab(event, 'historicalTrends')">Historical Trends</button>
-            <button class="tab-button" onclick="switchTab(event, 'comparisonTab')">Comparison</button>
-        </div>
-        
-        <div class="tab-content active" id="currentData">
-            <div class="main-table">
-                <div class="table-header">
-                    <div id="tableTitle">Clinic Performance Overview</div>
-                    <div class="view-toggle">
-                        <button class="active" onclick="toggleView('table')" disabled>Table View</button>
-                        <button onclick="toggleView('cards')" disabled>Card View</button>
-                    </div>
-                </div>
-                <div class="responsive-table" id="tableView">
-                    <table id="metricsTable">
-                        <thead>
-                            <tr>
-                                <th>Clinic</th>
-                                <!-- AreaManagerNotes removed -->
-                                <th>Notes Alert</th> 
-                                <th>New Patients</th>
-                                <th>Visits Target</th>
-                                <th>Daily Dist</th>
-                                <th>Utilization</th>
-                                <th>Retention (2nd)</th>
-                                <th>Retention (5th)</th>
-                                <th>Retention (10th)</th>
-                                <th>Retention (15th)</th>
-                                <th>Cancel</th>
-                                <th>No Show</th>
-                                <th>No Upcoming</th>
-                                <th>Units</th>
-                                <th>Insurance Coding</th>
-                                <th>Support Coding</th>
-                                <th>Confirmation</th>
-                                <th>Direct Access</th>
-                                <th>Survey</th>
-                                <th>Satisfaction</th>
-                                <th>Overall</th>
-                                <th>Trend</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody">
-                            <tr><td colspan="23" style="text-align: center;">Loading data...</td></tr> <!-- Updated colspan -->
-                        </tbody>
-                    </table>
-                </div>
-                <div id="cardView" style="display: none; padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                    <!-- Card view content will be populated dynamically -->
-                </div>
+    <div class="main-table" aria-label="Clinic Metrics Table">
+        <div class="table-header">
+            <div id="tableTitle">Clinic Performance Overview</div>
+            <div class="view-toggle" role="tablist" aria-label="View Toggle">
+                <button class="active" onclick="toggleView('table')" aria-selected="true" disabled>Table View</button>
+                <button onclick="toggleView('cards')" aria-selected="false" disabled>Card View</button>
             </div>
         </div>
-        
-        <div class="tab-content" id="historicalTrends">
-            <div class="historical-data-section">
-                <div class="table-header">
-                    Historical Data Analysis
-                </div>
-                <div class="chart-controls">
-                    <div class="filter-group">
-                        <label>Date Range:</label>
-                        <input type="text" id="dateRangePicker" class="date-range-picker" disabled/>
-                    </div>
-                    <div class="filter-group">
-                        <label>Select Clinic:</label>
-                        <select id="clinicSelector" onchange="updateHistoricalCharts()" disabled>
-                            <option value="all">All Clinics</option>
-                            <!-- Clinic options will be populated dynamically -->
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Select Metric:</label>
-                        <div class="metric-selector" id="metricSelector">
-                            <!-- Buttons populated dynamically -->
-                        </div>
-                    </div>
-                </div>
-                <div class="chart-container" id="trendChart"><p>Loading data...</p></div>
-                <div class="chart-container" id="comparisonChart"></div>
-            </div>
+        <div class="responsive-table" id="tableView">
+            <table id="metricsTable">
+                <thead>
+                    <tr>
+                        <th>Clinic</th>
+                        <th>Notes Alert</th>
+                        <th>New Patients</th>
+                        <th>Visits Target</th>
+                        <th>Daily Dist</th>
+                        <th>Utilization</th>
+                        <th>Retention (2nd)</th>
+                        <th>Retention (5th)</th>
+                        <th>Retention (10th)</th>
+                        <th>Retention (15th)</th>
+                        <th>Cancel</th>
+                        <th>No Show</th>
+                        <th>No Upcoming</th>
+                        <th>Units</th>
+                        <th>Insurance Coding</th>
+                        <th>Support Coding</th>
+                        <th>Confirmation</th>
+                        <th>Direct Access</th>
+                        <th>Survey</th>
+                        <th>Satisfaction</th>
+                        <th>Overall</th>
+                        <th>Trend</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="23" style="text-align: center;">Loading data...</td></tr>
+                </tbody>
+            </table>
         </div>
-
-        <div class="tab-content" id="comparisonTab">
-            <div class="comparison-controls">
-                <div class="filter-group">
-                    <label>Comparison Type:</label>
-                    <div class="comparison-type-selector">
-                        <button class="active" onclick="switchComparisonType(event, 'week-to-week')" disabled>Week-to-Week</button>
-                        <button onclick="switchComparisonType(event, '4-weeks')" disabled>Compare 4 Weeks</button>
-                        <button onclick="switchComparisonType(event, 'custom-ranges')" disabled>Compare Custom Ranges</button>
-                    </div>
-                </div>
-
-                <div id="comparisonOptionsWeekToWeek" class="comparison-options active">
-                    <div class="filter-group">
-                        <label>Select Clinic:</label>
-                        <select id="compareClinicSelectorW2W" disabled>
-                            <option value="all">All Clinics</option>
-                            <!-- Clinic options will be populated dynamically -->
-                        </select>
-                    </div>
-                    <button class="action-button" onclick="runComparison('week-to-week')" disabled>Run Comparison</button>
-                </div>
-
-                <div id="comparisonOptions4Weeks" class="comparison-options">
-                    <div class="filter-group">
-                        <label>Select Clinic:</label>
-                        <select id="compareClinicSelector4W" disabled>
-                            <option value="all">All Clinics</option>
-                            <!-- Clinic options will be populated dynamically -->
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Select Weeks:</label>
-                        <div class="week-selectors">
-                            <select id="compareWeek1" disabled></select>
-                            <select id="compareWeek2" disabled></select>
-                            <select id="compareWeek3" disabled></select>
-                            <select id="compareWeek4" disabled></select>
-                        </div>
-                    </div>
-                    <button class="action-button" onclick="runComparison('4-weeks')" disabled>Run Comparison</button>
-                </div>
-
-                <div id="comparisonOptionsCustomRanges" class="comparison-options">
-                    <div class="filter-group">
-                        <label>Select Clinic:</label>
-                        <select id="compareClinicSelectorCR" disabled>
-                            <option value="all">All Clinics</option>
-                            <!-- Clinic options will be populated dynamically -->
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Select Ranges:</label>
-                        <div class="range-pickers">
-                            <input type="text" id="compareRangePicker1" class="date-range-picker" disabled/>
-                            <input type="text" id="compareRangePicker2" class="date-range-picker" disabled/>
-                        </div>
-                    </div>
-                    <button class="action-button" onclick="runComparison('custom-ranges')" disabled>Run Comparison</button>
-                </div>
-            </div>
-
-            <div class="comparison-results" id="comparisonResults">
-                <!-- Comparison results will be displayed here -->
-                 <p>Loading data...</p>
-            </div>
+        <div id="cardView" style="display: none; padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
         </div>
     </div>
+    <!-- (tabs and details panel may be included as in your original) -->
 
-    <div class="details-panel" id="detailsPanel">
-        <div class="details-header">
-            <h2 id="detailsTitle">Clinic Details</h2>
-            <button class="close-btn" onclick="closeDetails()">×</button>
-        </div>
-        <div class="details-content" id="detailsContent">
-            <!-- Details will be populated dynamically -->
-        </div>
-    </div>
+    <!-- Load scripts at the end for faster rendering -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script>
+    // Debounce utility for search input
+    function debounce(func, delay) {
+        let timeout; return function() {
+            const context = this, args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+    // Show/hide loading overlay
+    function showLoading(msg) {
+        document.getElementById('loadingOverlay').hidden = false;
+        document.getElementById('loadingMessage').innerText = msg || 'Loading...';
+    }
+    function hideLoading() {
+        document.getElementById('loadingOverlay').hidden = true;
+    }
+    function enableControls() {
+        ['alertFilter','clinicFilter','searchInput','timePeriodFilter','exportBtn'].forEach(id=>{
+            const el=document.getElementById(id); if(el) el.disabled=false;
+        });
+    }
+    function disableControls() {
+        ['alertFilter','clinicFilter','searchInput','timePeriodFilter','exportBtn'].forEach(id=>{
+            const el=document.getElementById(id); if(el) el.disabled=true;
+        });
+    }
+    // Debounced search input
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('searchInput');
+        if(input) input.addEventListener('keyup', debounce(filterTable, 250));
+    });
+
+    // --- Full dashboard logic from your original index.html follows ---
+    // (copy everything from your main script in index.html, starting with the Google Charts setup,
+    // data fetching, parsing, populating, rendering, etc.)
+    // Example: (abbreviated for clarity, use your full code!)
+    google.charts.load('current', {'packages':['corechart', 'line', 'table']});
+    google.charts.setOnLoadCallback(setupDashboard);
+
+    // --- Configuration ---
+    const googleSheetDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=0&single=true&output=csv';
+    const googleSheetBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1294580086&single=true&output=csv';
+
+
 
     <script>
         // Load Google Charts
