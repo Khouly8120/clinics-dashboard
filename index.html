@@ -205,12 +205,19 @@
         }
 
         th {
-            background-color: #f8f9fa;
-            font-weight: bold;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
+             background-color: #f8f9fa;
+             font-weight: bold;
+             position: sticky;
+             top: 0;
+             z-index: 10;
+         }
+         /* Make the first column sticky */
+         th:first-child, td:first-child {
+             position: sticky;
+             left: 0;
+             background: #f8f9fa;
+             z-index: 11; /* Higher than other th */
+         }
 
         tbody tr:hover {
             background-color: #f8f9fa;
@@ -331,10 +338,10 @@
             border-radius: 5px;
         }
 
-        .responsive-table {
-            overflow-x: auto;
-        }
-
+                 .responsive-table {
+             overflow: auto;
+             max-height: 60vh; /* or whatever fits your page */
+         }
         .chart-container {
             width: 100%;
             height: 300px;
