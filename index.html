@@ -1371,13 +1371,13 @@
                         // Calculate trend compared to previous week
                         if (prevEntry && prevEntry[csvHeader] !== null && value !== null) {
                             const prevValue = prevEntry[csvHeader];
-                            if (value > prevValue) entry[metricId + 'Trend'] = 'up';
-                            else if (value < prevValue) entry[metricId + 'Trend'] = 'down';
-                            else entry[metricId + 'Trend'] = 'same';
-                        } else {
-                            entry[metricId + 'Trend'] = 'same'; // Default trend if no previous data or current data is null
-                        }
-                        
+                            if (value > prevValue) {
+    entry[metricId + 'Trend'] = higherIsBetter ? 'up' : 'down';
+} else if (value < prevValue) {
+    entry[metricId + 'Trend'] = higherIsBetter ? 'down' : 'up';
+} else {
+    entry[metricId + 'Trend'] = 'same';
+}
                         // Count alerts for overall calculation
                         if (entry[metricId + 'Alert']) {
                              overallAlertCounts[entry[metricId + 'Alert']]++;
@@ -1441,55 +1441,44 @@
         }
 
         // Helper function to determine alert level using DYNAMIC benchmarks and custom deviation thresholds
-        function getAlertLevel(value, target, higherIsBetter, metricId) { // higherIsBetter might not be needed for this logic
-            // Handle missing data or missing benchmarks gracefully
-            if (value === null || value === undefined) return 'normal'; 
-            if (target === null || target === undefined) {
-                 console.warn(`Missing benchmark for metric '${metricId}' for the relevant week. Alert level defaulted to 'normal'.`); // Log to console instead of UI
-                 return 'normal'; 
-            }
+        function getAlertLevel(value, target, higherIsBetter, metricId) {
+    if (value === null || value === undefined) return 'normal';
+    if (target === null || target === undefined) return 'normal';
 
-            const benchmarkValue = parseFloat(target);
     const metricValue = parseFloat(value);
-    if (isNaN(benchmarkValue) || isNaN(metricValue) || benchmarkValue === 0) {
-        return 'normal';
-    }
+    const benchmarkValue = parseFloat(target);
+    if (isNaN(metricValue) || isNaN(benchmarkValue) || benchmarkValue === 0) return 'normal';
 
-    // List of metrics to apply "only alert if higher than target"
-    const onlyAlertIfHigher = ['cancel', 'noShow', 'noUpcoming', 'directAccess'];
-
-    // For these metrics, only show alert if value > target
-    if (onlyAlertIfHigher.includes(metricId)) {
-        if (metricValue <= benchmarkValue) {
-            return 'normal';
-        }
-        // Only calculate alert if higher than target
+    // If higher is better
+    if (higherIsBetter) {
         const deviationPercent = ((metricValue - benchmarkValue) / benchmarkValue) * 100;
-        if (deviationPercent <= 5) {
+        if (deviationPercent >= 0) {
+            // At or above target: always 'normal' (good)
             return 'normal';
-        } else if (deviationPercent <= 10) {
+        } else if (deviationPercent >= -5) {
             return 'slight';
-        } else if (deviationPercent <= 20) {
+        } else if (deviationPercent >= -10) {
             return 'low';
-        } else if (deviationPercent <= 30) {
+        } else if (deviationPercent >= -20) {
             return 'high';
         } else {
             return 'critical';
         }
-    }
-
-    // Default logic for other metrics
-    const deviationPercent = Math.abs((metricValue - benchmarkValue) / benchmarkValue) * 100;
-    if (deviationPercent <= 5) {
-        return 'normal';
-    } else if (deviationPercent <= 10) {
-        return 'slight';
-    } else if (deviationPercent <= 20) {
-        return 'low';
-    } else if (deviationPercent <= 30) {
-        return 'high';
     } else {
-        return 'critical';
+        // If lower is better
+        const deviationPercent = ((benchmarkValue - metricValue) / benchmarkValue) * 100;
+        if (deviationPercent >= 0) {
+            // At or below target: always 'normal' (good)
+            return 'normal';
+        } else if (deviationPercent >= -5) {
+            return 'slight';
+        } else if (deviationPercent >= -10) {
+            return 'low';
+        } else if (deviationPercent >= -20) {
+            return 'high';
+        } else {
+            return 'critical';
+        }
     }
 }
         
