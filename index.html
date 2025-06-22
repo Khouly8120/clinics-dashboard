@@ -661,6 +661,10 @@
             </select>
         </div>
         <div class="filter-group">
+             <label>Filter by Date:</label>
+            <input type="date" id="dateFilter" onchange="filterTable()" disabled>
+         </div>
+        <div class="filter-group">
             <label>Export Data:</label>
             <button class="action-button" onclick="exportData()" disabled>Export to CSV</button>
         </div>
@@ -693,6 +697,7 @@
                             <tr>
                                 <th>Clinic</th>
                                 <!-- AreaManagerNotes removed -->
+                                <th>Date</th>
                                 <th>Notes Alert</th> 
                                 <th>New Patients</th>
                                 <th>Visits Target</th>
@@ -870,7 +875,7 @@
         ];
         // Expected headers for the DATA sheet
         const expectedDataCsvHeaders = [
-            'Clinic', 'Week', 'Year', 'AreaManagerNotesAlert',
+            'Clinic', 'Week', 'Year', 'Date', 'AreaManagerNotesAlert',
             'NewPatients', 'VisitsTarget', 'DailyDistribution', 'Utilization', 
             'Retention2nd', 'Retention5th', 'Retention10th', 'Retention15th', 
             'Cancel', 'NoShow', 'NoUpcoming', 'Units', 'InsuranceCoding', 
@@ -978,6 +983,9 @@
                 updateLastUpdated();
                 updateHistoricalCharts(); // Initial chart draw
                 enableControls(); // Enable UI controls now that data is loaded
+                document.getElementById('dateFilter').disabled = false;
+
+
                 
                 console.log("Dashboard Initialized Successfully.");
                 // displayValidationMessages(); // Validation messages hidden on success
@@ -1831,23 +1839,30 @@
         // --- Event Handlers & Filters ---
 
         // Filter table based on selected alert level, clinic, and search input
-        function filterTable() {
-            if (availableWeeks.length === 0) return; // Don't filter if no data loaded
-            
-            const alertFilter = document.getElementById('alertFilter').value;
-            const clinicFilter = document.getElementById('clinicFilter').value;
-            const searchInput = document.getElementById('searchInput').value.toLowerCase();
-            const timePeriod = document.getElementById('timePeriodFilter').value;
+        // Filter table based on selected alert level, clinic, search input, and date
+function filterTable() {
+    const selectedDate = document.getElementById('dateFilter').value;
+    if (availableWeeks.length === 0) return; // Don't filter if no data loaded
 
-            const sourceData = (timePeriod === 'current') ? getDataForWeek(latestWeek.year, latestWeek.week) : getDataForWeek(previousWeek.year, previousWeek.week);
+    const alertFilter = document.getElementById('alertFilter').value;
+    const clinicFilter = document.getElementById('clinicFilter').value;
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const timePeriod = document.getElementById('timePeriodFilter').value;
 
-            displayedData = sourceData.filter(clinic => {
-                const matchesAlert = alertFilter === 'all' || clinic.overallAlert === alertFilter;
-                const matchesClinic = clinicFilter === 'all' || clinic.Clinic === clinicFilter;
-                const matchesSearch = clinic.Clinic.toLowerCase().includes(searchInput);
-                return matchesAlert && matchesClinic && matchesSearch;
-            });
+    // Pick source data based on selected time period
+    const sourceData = (timePeriod === 'current')
+        ? getDataForWeek(latestWeek.year, latestWeek.week)
+        : getDataForWeek(previousWeek.year, previousWeek.week);
 
+    // Filter data
+    displayedData = sourceData.filter(clinic => {
+        const matchesAlert = alertFilter === 'all' || clinic.overallAlert === alertFilter;
+        const matchesClinic = clinicFilter === 'all' || clinic.Clinic === clinicFilter;
+        const matchesSearch = clinic.Clinic.toLowerCase().includes(searchInput);
+        const matchesDate = !selectedDate || clinic.Date === selectedDate; // Use .Date or .date based on your parsed data
+
+        return matchesAlert && matchesClinic && matchesSearch && matchesDate;
+    });
             // Re-populate table and card view based on filtered data
             if (currentView === 'table') {
                  populateTable(displayedData);
