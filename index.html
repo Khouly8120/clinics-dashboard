@@ -1372,15 +1372,25 @@
                         // Calculate alert level using dynamic benchmark
                         entry[metricId + 'Alert'] = getAlertLevel(value, benchmarkValue, higherIsBetter, metricId);
                         
-                        // Calculate trend compared to previous week
-                        if (prevEntry && prevEntry[csvHeader] !== null && value !== null) {
-                            const prevValue = prevEntry[csvHeader];
-                            if (value > prevValue) entry[metricId + 'Trend'] = 'up';
-                            else if (value < prevValue) entry[metricId + 'Trend'] = 'down';
-                            else entry[metricId + 'Trend'] = 'same';
-                        } else {
-                            entry[metricId + 'Trend'] = 'same'; // Default trend if no previous data or current data is null
-                        }
+                        // Calculate trend compared to previous week, taking higherIsBetter into account
+if (
+    prevEntry && 
+    prevEntry[csvHeader] !== null && prevEntry[csvHeader] !== undefined &&
+    value !== null && value !== undefined &&
+    !isNaN(Number(prevEntry[csvHeader])) && !isNaN(Number(value))
+) {
+    const prevValue = Number(prevEntry[csvHeader]);
+    const currValue = Number(value);
+    if (currValue > prevValue) {
+        entry[metricId + 'Trend'] = higherIsBetter ? 'up' : 'down';
+    } else if (currValue < prevValue) {
+        entry[metricId + 'Trend'] = higherIsBetter ? 'down' : 'up';
+    } else {
+        entry[metricId + 'Trend'] = 'same';
+    }
+} else {
+    entry[metricId + 'Trend'] = 'same'; // Default trend if no previous data or value is not a number
+}
                         
                         // Count alerts for overall calculation
                         if (entry[metricId + 'Alert']) {
