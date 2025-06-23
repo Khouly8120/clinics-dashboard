@@ -1750,7 +1750,7 @@
                 
                 row.innerHTML = `
     <td class="clinic-name">${clinic.Clinic}</td>
-    <td>${clinic.Date || ''}</td>
+    <td>${clinic.date || ''}</td>
     <!-- AreaManagerNotes removed -->
     <td><span class="alert-badge alert-${notesAlert}">${notesAlert.toUpperCase()}</span></td>
     ${generateMetricCell(clinic, 'newPatients')}
