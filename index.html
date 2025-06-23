@@ -1483,8 +1483,21 @@
     }
 
     // Default logic for other metrics
-    const deviationPercent = Math.abs((metricValue - benchmarkValue) / benchmarkValue) * 100;
-    if (deviationPercent <= 5) {
+        // Default logic for other metrics, using higherIsBetter
+    let deviationPercent = 0;
+    let isNegative = false;
+
+    if (higherIsBetter === true) {
+        deviationPercent = ((benchmarkValue - metricValue) / benchmarkValue) * 100;
+        isNegative = metricValue < benchmarkValue; // Bad if below target
+    } else if (higherIsBetter === false) {
+        deviationPercent = ((metricValue - benchmarkValue) / benchmarkValue) * 100;
+        isNegative = metricValue > benchmarkValue; // Bad if above target
+    } else {
+        deviationPercent = Math.abs((metricValue - benchmarkValue) / benchmarkValue) * 100;
+        isNegative = deviationPercent > 0;
+    }
+    if (!isNegative || deviationPercent <= 5) {
         return 'normal';
     } else if (deviationPercent <= 10) {
         return 'slight';
