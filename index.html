@@ -1391,7 +1391,6 @@ if (
 } else {
     entry[metricId + 'Trend'] = 'same'; // Default trend if no previous data or value is not a number
 }
-                        
                         // Count alerts for overall calculation
                         if (entry[metricId + 'Alert']) {
                              overallAlertCounts[entry[metricId + 'Alert']]++;
@@ -2347,6 +2346,11 @@ function filterTable() {
                         const week4Str = document.getElementById('compareWeek4').value;
                         
                         const weeksInfo = [week1Str, week2Str, week3Str, week4Str].map(parseWeekString);
+                        // Ensure 4-week comparison goes from oldest to newest
+weeksInfo.sort((a, b) => {
+    if (a.year !== b.year) return a.year - b.year;
+    return a.week - b.week;
+});
                         const weekData = weeksInfo.map(w => getWeekData(clinicName, w.year, w.week));
                         const weekLabels = weeksInfo.map(w => `W${w.week}, ${w.year}`);
 
