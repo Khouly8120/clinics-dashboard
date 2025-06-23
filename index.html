@@ -1749,37 +1749,38 @@
                 const notesAlert = clinic['areaManagerNotesAlertLevel'] || 'normal'; // Use processed level
                 
                 row.innerHTML = `
-                    <td class="clinic-name">${clinic.Clinic}</td>
-                    <!-- AreaManagerNotes removed -->
-                    <td><span class="alert-badge alert-${notesAlert}">${notesAlert.toUpperCase()}</span></td> <!-- Manual Alert Cell -->
-                    ${generateMetricCell(clinic, 'newPatients')}
-                    ${generateMetricCell(clinic, 'visitsTarget')}
-                    ${generateMetricCell(clinic, 'dailyDistribution')}
-                    ${generateMetricCell(clinic, 'utilization')}
-                    ${generateMetricCell(clinic, 'retention2nd')}
-                    ${generateMetricCell(clinic, 'retention5th')}
-                    ${generateMetricCell(clinic, 'retention10th')}
-                    ${generateMetricCell(clinic, 'retention15th')}
-                    ${generateMetricCell(clinic, 'cancel')}
-                    ${generateMetricCell(clinic, 'noShow')}
-                    ${generateMetricCell(clinic, 'noUpcoming')}
-                    ${generateMetricCell(clinic, 'units')}
-                    ${generateMetricCell(clinic, 'insuranceCoding')}
-                    ${generateMetricCell(clinic, 'supportiveCoding')}
-                    ${generateMetricCell(clinic, 'confirmation')}
-                    ${generateMetricCell(clinic, 'directAccess')}
-                    ${generateMetricCell(clinic, 'surveyCollection')}
-                    ${generateMetricCell(clinic, 'satisfaction')}
-                    <td class="metric-value">
-                        <span class="alert-badge alert-${clinic.overallAlert}">${clinic.overallAlert.toUpperCase()}</span>
-                    </td>
-                    <td class="metric-value">
-                        ${clinic.weeklyTrend || 'N/A'}
-                    </td>
-                    <td>
-                        <button class="action-button" onclick="showDetails('${clinic.Clinic}')">Details</button>
-                    </td>
-                `;
+    <td class="clinic-name">${clinic.Clinic}</td>
+    <td>${clinic.Date || ''}</td>
+    <!-- AreaManagerNotes removed -->
+    <td><span class="alert-badge alert-${notesAlert}">${notesAlert.toUpperCase()}</span></td>
+    ${generateMetricCell(clinic, 'newPatients')}
+    ${generateMetricCell(clinic, 'visitsTarget')}
+    ${generateMetricCell(clinic, 'dailyDistribution')}
+    ${generateMetricCell(clinic, 'utilization')}
+    ${generateMetricCell(clinic, 'retention2nd')}
+    ${generateMetricCell(clinic, 'retention5th')}
+    ${generateMetricCell(clinic, 'retention10th')}
+    ${generateMetricCell(clinic, 'retention15th')}
+    ${generateMetricCell(clinic, 'cancel')}
+    ${generateMetricCell(clinic, 'noShow')}
+    ${generateMetricCell(clinic, 'noUpcoming')}
+    ${generateMetricCell(clinic, 'units')}
+    ${generateMetricCell(clinic, 'insuranceCoding')}
+    ${generateMetricCell(clinic, 'supportiveCoding')}
+    ${generateMetricCell(clinic, 'confirmation')}
+    ${generateMetricCell(clinic, 'directAccess')}
+    ${generateMetricCell(clinic, 'surveyCollection')}
+    ${generateMetricCell(clinic, 'satisfaction')}
+    <td class="metric-value">
+        <span class="alert-badge alert-${clinic.overallAlert}">${clinic.overallAlert.toUpperCase()}</span>
+    </td>
+    <td class="metric-value">
+        ${clinic.weeklyTrend || 'N/A'}
+    </td>
+    <td>
+        <button class="action-button" onclick="showDetails('${clinic.Clinic}')">Details</button>
+    </td>
+`;
                 tbody.appendChild(row);
             });
         }
