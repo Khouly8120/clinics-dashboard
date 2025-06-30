@@ -873,14 +873,14 @@
             { id: 'retention5th', name: 'Retention 5th %', type: 'percentage' },
             { id: 'retention10th', name: 'Retention 10th %', type: 'percentage' },
             { id: 'retention15th', name: 'Retention 15th %', type: 'percentage' },
-            { id: 'cancel', name: 'Cancel %', type: 'percentage' },
-            { id: 'noShow', name: 'No Show %', type: 'percentage' },
-            { id: 'noUpcoming', name: 'No Upcoming %', type: 'percentage' },
+            { id: 'cancel', name: 'Cancel %', type: 'percentage', higherIsBetter: false },
+            { id: 'noShow', name: 'No Show %', type: 'percentage', higherIsBetter: false },
+            { id: 'noUpcoming', name: 'No Upcoming %', type: 'percentage', higherIsBetter: false },
             { id: 'units', name: 'Units %', type: 'percentage' },
             { id: 'insuranceCoding', name: 'Insurance Utilization Coding %', type: 'percentage' },
             { id: 'supportiveCoding', name: 'Supportive Coding %', type: 'percentage' },
             { id: 'confirmation', name: 'Confirmation %', type: 'percentage' },
-            { id: 'directAccess', name: 'Direct Access %', type: 'percentage' },
+            { id: 'directAccess', name: 'Direct Access %', type: 'percentage', higherIsBetter: false },
             { id: 'surveyCollection', name: 'Survey Collection %', type: 'percentage' },
             { id: 'satisfaction', name: 'Hospitality/Clinical Satisfaction %', type: 'percentage' }
         ];
@@ -2587,9 +2587,11 @@ weeksInfo.sort((a, b) => {
                     const diff = val2 - val1;
                     change = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}${metric.type === 'percentage' ? '%' : ''}`;
                     if (Math.abs(diff) > 0.01) { // Add a small threshold to avoid marking tiny changes
-                         if (diff > 0) changeClass = higherIsBetter ? 'change-positive' : 'change-negative';
-                         if (diff < 0) changeClass = higherIsBetter ? 'change-negative' : 'change-positive';
-                    }
+                    // Use metric.higherIsBetter if present, otherwise fall back to benchmark or default
+                  let metricHigherIsBetter = typeof metric.higherIsBetter === 'boolean' ? metric.higherIsBetter : higherIsBetter;
+                 if (diff > 0) changeClass = metricHigherIsBetter ? 'change-positive' : 'change-negative';
+                if (diff < 0) changeClass = metricHigherIsBetter ? 'change-negative' : 'change-positive';
+}
                 }
 
                 tableHTML += `<tr>
@@ -2660,9 +2662,11 @@ weeksInfo.sort((a, b) => {
                  let trendClass = '';
                  if (values.length >= 2) {
                      const diff = values[values.length - 1] - values[0];
-                     if (diff > 0.1) { trend = 'Improving'; trendClass = higherIsBetter ? 'change-positive' : 'change-negative'; }
-                     else if (diff < -0.1) { trend = 'Worsening'; trendClass = higherIsBetter ? 'change-negative' : 'change-positive'; }
-                     else { trend = 'Stable'; }
+                     // Use metric.higherIsBetter if present, otherwise fall back to benchmark or default
+                   let metricHigherIsBetter = typeof metric.higherIsBetter === 'boolean' ? metric.higherIsBetter : higherIsBetter;
+                   if (diff > 0.1) { trend = 'Improving'; trendClass = metricHigherIsBetter ? 'change-positive' : 'change-negative'; }
+                   else if (diff < -0.1) { trend = 'Worsening'; trendClass = metricHigherIsBetter ? 'change-negative' : 'change-positive'; }
+                   else { trend = 'Stable'; }
                  }
                  tableHTML += `<td class="${trendClass}">${trend}</td>`;
                  tableHTML += `</tr>`;
