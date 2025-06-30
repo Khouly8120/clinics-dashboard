@@ -2663,17 +2663,24 @@ if (typeof metric.higherIsBetter === 'boolean') {
                      if (typeof val === 'number') values.push(val);
                  });
                  
-                 // Basic trend calculation (first vs last)
-                 let trend = 'N/A';
-                 let trendClass = '';
-                 if (values.length >= 2) {
-                     const diff = values[values.length - 1] - values[0];
-                     // Use metric.higherIsBetter if present, otherwise fall back to benchmark or default
-                   let metricHigherIsBetter = typeof metric.higherIsBetter === 'boolean' ? metric.higherIsBetter : higherIsBetter;
-                   if (diff > 0.1) { trend = 'Improving'; trendClass = metricHigherIsBetter ? 'change-positive' : 'change-negative'; }
-                   else if (diff < -0.1) { trend = 'Worsening'; trendClass = metricHigherIsBetter ? 'change-negative' : 'change-positive'; }
-                   else { trend = 'Stable'; }
-                 }
+                 // Use higherIsBetter from metricsDefinition ONLY
+let trend = 'N/A';
+let trendClass = '';
+if (values.length >= 2) {
+    const diff = values[values.length - 1] - values[0];
+    console.log(metric.id, "higherIsBetter:", metric.higherIsBetter, "diff:", diff);
+    // Use metric.higherIsBetter, default to true if undefined
+    const metricHigherIsBetter = typeof metric.higherIsBetter === 'boolean' ? metric.higherIsBetter : true;
+    if (diff > 0.1) {
+        trend = metricHigherIsBetter ? 'Improving' : 'Worsening';
+        trendClass = metricHigherIsBetter ? 'change-positive' : 'change-negative';
+    } else if (diff < -0.1) {
+        trend = metricHigherIsBetter ? 'Worsening' : 'Improving';
+        trendClass = metricHigherIsBetter ? 'change-negative' : 'change-positive';
+    } else {
+        trend = 'Stable';
+    }
+}
                  tableHTML += `<td class="${trendClass}">${trend}</td>`;
                  tableHTML += `</tr>`;
              });
