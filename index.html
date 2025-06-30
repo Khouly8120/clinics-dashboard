@@ -2638,15 +2638,21 @@ weeksInfo.sort((a, b) => {
 
                  tableHTML += `<tr><td class="metric-name">${metric.name}</td>`;
                  let values = [];
-                 let higherIsBetter = true; // Default, use last period's benchmark
-                 const lastData = dataArray[dataArray.length - 1];
-                 const lastWeekKey = `${lastData.Year}-W${lastData.Week}`;
-                 const lastBenchmark = lastData.Year !== 'Range' ? benchmarkData[lastWeekKey] : null;
-                 if (lastBenchmark) {
-                      const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
-                      const flag = lastBenchmark[csvHeader + '_HigherIsBetter'];
-                      higherIsBetter = (flag === null || flag === undefined) ? true : flag;
-                 }
+                 // Always prefer the flag from metricsDefinition
+let higherIsBetter = true;
+if (typeof metric.higherIsBetter === 'boolean') {
+    higherIsBetter = metric.higherIsBetter;
+} else {
+    // fallback to benchmark flag if not set in metricsDefinition
+    const lastData = dataArray[dataArray.length - 1];
+    const lastWeekKey = `${lastData.Year}-W${lastData.Week}`;
+    const lastBenchmark = lastData.Year !== 'Range' ? benchmarkData[lastWeekKey] : null;
+    if (lastBenchmark) {
+        const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
+        const flag = lastBenchmark[csvHeader + '_HigherIsBetter'];
+        higherIsBetter = (flag === null || flag === undefined) ? true : flag;
+    }
+}
                  
                  dataArray.forEach(data => {
                      const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
