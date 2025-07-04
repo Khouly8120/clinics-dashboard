@@ -724,6 +724,7 @@
                                 <th>Units</th>
                                 <th>Insurance Coding</th>
                                 <th>Support Coding</th>
+                                <th>Average Visits</th>
                                 <th>Confirmation</th>
                                 <th>Direct Access</th>
                                 <th>Survey</th>
@@ -879,6 +880,7 @@
             { id: 'units', name: 'Units %', type: 'percentage' },
             { id: 'insuranceCoding', name: 'Insurance Utilization Coding %', type: 'percentage' },
             { id: 'supportiveCoding', name: 'Supportive Coding %', type: 'percentage' },
+            { id: 'averageVisits', name: 'Average Number of Visits', type: 'number' },
             { id: 'confirmation', name: 'Confirmation %', type: 'percentage' },
             { id: 'directAccess', name: 'Direct Access %', type: 'percentage', higherIsBetter: false },
             { id: 'surveyCollection', name: 'Survey Collection %', type: 'percentage' },
@@ -890,7 +892,7 @@
             'NewPatients', 'VisitsTarget', 'DailyDistribution', 'Utilization', 
             'Retention2nd', 'Retention5th', 'Retention10th', 'Retention15th', 
             'Cancel', 'NoShow', 'NoUpcoming', 'Units', 'InsuranceCoding', 
-            'SupportiveCoding', 'Confirmation', 'DirectAccess', 'SurveyCollection', 'Satisfaction'
+            'SupportiveCoding', 'AverageVisits', 'Confirmation', 'DirectAccess', 'SurveyCollection', 'Satisfaction'
         ];
         // Expected headers for the BENCHMARK sheet (Metric names + _HigherIsBetter)
         const expectedBenchmarkCsvHeaders = [
@@ -1325,8 +1327,32 @@
                 }
             }
             console.log("Latest Week:", latestWeek, "Previous Week:", previousWeek);
-
+            
             // Calculate alerts and trends for each entry using dynamic benchmarks
+            // Add this at (before "Object.keys(allClinicsData).forEach(...")
+function getAverageVisitsAlertLevel(current, previous) {
+    if (previous == null || previous === 0 || current == null) return 'normal';
+    const diffPercent = Math.abs((current - previous) / previous) * 100;
+    if (diffPercent <= 5) return 'normal';
+    if (diffPercent <= 10) return 'slight';
+    if (diffPercent <= 20) return 'low';
+    if (diffPercent <= 30) return 'high';
+    return 'critical';
+}
+            function findPreviousWeekData(clinicData, currentRow) {
+    const currentWeek = parseInt(currentRow.Week || currentRow.week);
+    const currentYear = parseInt(currentRow.Year || currentRow.year);
+    let prevWeek = currentWeek - 1;
+    let prevYear = currentYear;
+    if (prevWeek <= 0) {
+        prevYear -= 1;
+        prevWeek = 52;
+    }
+    return clinicData.find(r =>
+        parseInt(r.Week || r.week) === prevWeek &&
+        parseInt(r.Year || r.year) === prevYear
+    );
+}
             Object.keys(allClinicsData).forEach(clinicName => {
                 // Sort each clinic's history chronologically
                 allClinicsData[clinicName].sort((a, b) => {
@@ -1357,21 +1383,84 @@
                     overallAlertCounts[notesAlert]++;
                     trendStable++; // No trend for notes alert
 
-                    // Process other metrics defined in metricsDefinition
                     metricsDefinition.forEach(metric => {
-                        const metricId = metric.id;
-                        const csvHeader = metricId.charAt(0).toUpperCase() + metricId.slice(1);
-                        const value = entry[csvHeader]; // Get value from Data sheet
-                        
-                        // Get benchmark and direction from Benchmark sheet for this week
-                        const benchmarkValue = weeklyBenchmarks ? weeklyBenchmarks[csvHeader] : null;
-                        const higherIsBetterFlag = weeklyBenchmarks ? weeklyBenchmarks[csvHeader + '_HigherIsBetter'] : null;
-                        // Fallback: Assume higher is better if flag is missing/invalid (could refine this)
-                        const higherIsBetter = (higherIsBetterFlag === null || higherIsBetterFlag === undefined) ? true : higherIsBetterFlag;
-                        
-                        // Calculate alert level using dynamic benchmark
-                        entry[metricId + 'Alert'] = getAlertLevel(value, benchmarkValue, higherIsBetter, metricId);
-                        
+    const metricId = metric.id;
+    const csvHeader = metricId.charAt(0).toUpperCase() + metricId.slice(1);
+    const value = entry[csvHeader];
+
+    if (metricId === 'averageVisits') {
+        // Special logic for Average Number of Visits
+        let prevValue = null;
+        if (prevEntry && prevEntry[csvHeader] !== null && prevEntry[csvHeader] !== undefined && !isNaN(Number(prevEntry[csvHeader]))) {
+            prevValue = Number(prevEntry[csvHeader]);
+        }
+        const currValue = !isNaN(Number(value)) ? Number(value) : null;
+        entry[metricId + 'Alert'] = getAverageVisitsAlertLevel(currValue, prevValue);
+
+        // Trend: up/down/same compared to previous week
+        if (prevValue !== null && currValue !== null) {
+            if (currValue > prevValue) {
+                entry[metricId + 'Trend'] = 'up';
+            } else if (currValue < prevValue) {
+                entry[metricId + 'Trend'] = 'down';
+            } else {
+                entry[metricId + 'Trend'] = 'same';
+            }
+        } else {
+            entry[metricId + 'Trend'] = 'same';
+        }
+    } else {
+        // Get benchmark and direction from Benchmark sheet for this week
+        const benchmarkValue = weeklyBenchmarks ? weeklyBenchmarks[csvHeader] : null;
+        const higherIsBetterFlag = weeklyBenchmarks ? weeklyBenchmarks[csvHeader + '_HigherIsBetter'] : null;
+        const higherIsBetter = (higherIsBetterFlag === null || higherIsBetterFlag === undefined) ? true : higherIsBetterFlag;
+
+        // Calculate alert level using dynamic benchmark
+        entry[metricId + 'Alert'] = getAlertLevel(value, benchmarkValue, higherIsBetter, metricId);
+
+        // Calculate trend compared to previous week, taking higherIsBetter into account
+        if (
+            prevEntry &&
+            prevEntry[csvHeader] !== null && prevEntry[csvHeader] !== undefined &&
+            value !== null && value !== undefined &&
+            !isNaN(Number(prevEntry[csvHeader])) && !isNaN(Number(value))
+        ) {
+            const prevValue = Number(prevEntry[csvHeader]);
+            const currValue = Number(value);
+            if (currValue > prevValue) {
+                entry[metricId + 'Trend'] = higherIsBetter ? 'up' : 'down';
+            } else if (currValue < prevValue) {
+                entry[metricId + 'Trend'] = higherIsBetter ? 'down' : 'up';
+            } else {
+                entry[metricId + 'Trend'] = 'same';
+            }
+        } else {
+            entry[metricId + 'Trend'] = 'same';
+        }
+    }
+
+    // Count alerts for overall calculation
+    if (entry[metricId + 'Alert']) {
+        overallAlertCounts[entry[metricId + 'Alert']]++;
+    }
+
+    // Count trends for weekly trend calculation
+    if (entry[metricId + 'Trend'] === 'up') {
+        if (metricId === 'averageVisits') {
+            trendImproving++; // Assume higher is always better for trend count, or adjust as needed
+        } else {
+            higherIsBetter ? trendImproving++ : trendWorsening++;
+        }
+    } else if (entry[metricId + 'Trend'] === 'down') {
+        if (metricId === 'averageVisits') {
+            trendWorsening++; // Assume lower is always worse for trend count, or adjust as needed
+        } else {
+            higherIsBetter ? trendWorsening++ : trendImproving++;
+        }
+    } else {
+        trendStable++;
+    }
+});
                         // Calculate trend compared to previous week, taking higherIsBetter into account
 if (
     prevEntry && 
@@ -1776,6 +1865,7 @@ if (
     ${generateMetricCell(clinic, 'units')}
     ${generateMetricCell(clinic, 'insuranceCoding')}
     ${generateMetricCell(clinic, 'supportiveCoding')}
+    ${generateMetricCell(clinic, 'averageVisits')}
     ${generateMetricCell(clinic, 'confirmation')}
     ${generateMetricCell(clinic, 'directAccess')}
     ${generateMetricCell(clinic, 'surveyCollection')}
