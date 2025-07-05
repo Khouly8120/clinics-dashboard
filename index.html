@@ -860,7 +860,7 @@
         // --- Configuration ---
         // HARDCODED Google Sheet URLs - Replace these if your published sheet URLs change
         const googleSheetDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=0&single=true&output=csv'; 
-        const googleSheetBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1294580086&single=true&output=csv'; 
+        const googleSheetBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EScDrpXoqWiuZpnfaKmrAzN/pub?gid=1294580086&single=true&output=csv'; 
 
         // --- Data Definitions ---
         // Note: AreaManagerNotes removed, AreaManagerNotesAlert kept (no benchmark)
@@ -1384,82 +1384,83 @@ function getAverageVisitsAlertLevel(current, previous) {
                     trendStable++; // No trend for notes alert
 
                     metricsDefinition.forEach(metric => {
-    const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
-    const value = entry[csvHeader];
+                        const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
+                        const value = entry[csvHeader];
+                        let higherIsBetter = true; // Initialize higherIsBetter here
 
-      if (metric.id === 'averageVisits') {
-        // Special logic for Average Number of Visits
-        let prevValue = null;
-        if (prevEntry && prevEntry[csvHeader] !== null && prevEntry[csvHeader] !== undefined && !isNaN(Number(prevEntry[csvHeader]))) {
-            prevValue = Number(prevEntry[csvHeader]);
-        }
-        const currValue = !isNaN(Number(value)) ? Number(value) : null;
-        entry[metric.id + 'Alert'] = getAverageVisitsAlertLevel(currValue, prevValue);
+                        if (metric.id === 'averageVisits') {
+                            // Special logic for Average Number of Visits
+                            let prevValue = null;
+                            if (prevEntry && prevEntry[csvHeader] !== null && prevEntry[csvHeader] !== undefined && !isNaN(Number(prevEntry[csvHeader]))) {
+                                prevValue = Number(prevEntry[csvHeader]);
+                            }
+                            const currValue = !isNaN(Number(value)) ? Number(value) : null;
+                            entry[metric.id + 'Alert'] = getAverageVisitsAlertLevel(currValue, prevValue);
 
-        // Trend: up/down/same compared to previous week
-        if (prevValue !== null && currValue !== null) {
-            if (currValue > prevValue) {
-                entry[metric.id + 'Trend'] = 'up';
-            } else if (currValue < prevValue) {
-                entry[metric.id + 'Trend'] = 'down';
-            } else {
-                entry[metric.id + 'Trend'] = 'same';
-            }
-        } else {
-            entry[metric.id + 'Trend'] = 'same';
-        }
-    } else {
-        // Get benchmark and direction from Benchmark sheet for this week
-        const benchmarkValue = weeklyBenchmarks ? weeklyBenchmarks[csvHeader] : null;
-        const higherIsBetterFlag = weeklyBenchmarks ? weeklyBenchmarks[csvHeader + '_HigherIsBetter'] : null;
-        const higherIsBetter = (higherIsBetterFlag === null || higherIsBetterFlag === undefined) ? true : higherIsBetterFlag;
+                            // Trend: up/down/same compared to previous week
+                            if (prevValue !== null && currValue !== null) {
+                                if (currValue > prevValue) {
+                                    entry[metric.id + 'Trend'] = 'up';
+                                } else if (currValue < prevValue) {
+                                    entry[metric.id + 'Trend'] = 'down';
+                                } else {
+                                    entry[metric.id + 'Trend'] = 'same';
+                                }
+                            } else {
+                                entry[metric.id + 'Trend'] = 'same';
+                            }
+                        } else {
+                            // Get benchmark and direction from Benchma
+                            const higherIsBetterFlag = weeklyBenchmarks ? weeklyBenchmarks[csvHeader + 
+'_HigherIsBetter
+'] : null;
+                            higherIsBetter = (higherIsBetterFlag === null || higherIsBetterFlag === undefined) ? true : higherIsBetterFlag;
+                            const benchmarkValue = weeklyBenchmarks ? weeklyBenchmarks[csvHeader] : null;
+                            entry[metric.id + 'Alert'] = getAlertLevel(value, benchmarkValue, higherIsBetter, metric.id);
 
-        // Calculate alert level using dynamic benchmark
-        entry[metric.id + 'Alert'] = getAlertLevel(value, benchmarkValue, higherIsBetter, metric.id);
+                            // Calculate trend compared to previous week, taking higherIsBetter into account
+                            if (
+                                prevEntry &&
+                                prevEntry[csvHeader] !== null && prevEntry[csvHeader] !== undefined &&
+                                value !== null && value !== undefined &&
+                                !isNaN(Number(prevEntry[csvHeader])) && !isNaN(Number(value))
+                            ) {
+                                const prevValue = Number(prevEntry[csvHeader]);
+                                const currValue = Number(value);
+                                if (currValue > prevValue) {
+                                    entry[metric.id + 'Trend'] = higherIsBetter ? 'up' : 'down';
+                                } else if (currValue < prevValue) {
+                                    entry[metric.id + 'Trend'] = higherIsBetter ? 'down' : 'up';
+                                } else {
+                                    entry[metric.id + 'Trend'] = 'same';
+                                }
+                            } else {
+                                entry[metric.id + 'Trend'] = 'same';
+                            }
+                        }
 
-        // Calculate trend compared to previous week, taking higherIsBetter into account
-        if (
-            prevEntry &&
-            prevEntry[csvHeader] !== null && prevEntry[csvHeader] !== undefined &&
-            value !== null && value !== undefined &&
-            !isNaN(Number(prevEntry[csvHeader])) && !isNaN(Number(value))
-        ) {
-            const prevValue = Number(prevEntry[csvHeader]);
-            const currValue = Number(value);
-            if (currValue > prevValue) {
-                entry[metric.id + 'Trend'] = higherIsBetter ? 'up' : 'down';
-            } else if (currValue < prevValue) {
-                entry[metric.id + 'Trend'] = higherIsBetter ? 'down' : 'up';
-            } else {
-                entry[metric.id + 'Trend'] = 'same';
-            }
-        } else {
-            entry[metric.id + 'Trend'] = 'same';
-        }
-    }
+                        // Count alerts for overall calculation
+                        if (entry[metric.id + 'Alert']) {
+                            overallAlertCounts[entry[metric.id + 'Alert']]++;
+                        }
 
-    // Count alerts for overall calculation
-    if (entry[metric.id + 'Alert']) {
-        overallAlertCounts[entry[metric.id + 'Alert']]++;
-    }
-
-    // Count trends for weekly trend calculation
-    if (entry[metric.id + 'Trend'] === 'up') {
-        if (metric.id === 'averageVisits') {
-            trendImproving++; // Assume higher is always better for trend count, or adjust as needed
-        } else {
-            higherIsBetter ? trendImproving++ : trendWorsening++;
-        }
-    } else if (entry[metric.id + 'Trend'] === 'down') {
-        if (metric.id === 'averageVisits') {
-            trendWorsening++; // Assume lower is always worse for trend count, or adjust as needed
-        } else {
-            higherIsBetter ? trendWorsening++ : trendImproving++;
-        }
-    } else {
-        trendStable++;
-    }
-});
+                        // Count trends for weekly trend calculation
+                        if (entry[metric.id + 'Trend'] === 'up') {
+                            if (metric.id === 'averageVisits') {
+                                trendImproving++; // Assume higher is always better for trend count, or adjust as needed
+                            } else {
+                                higherIsBetter ? trendImproving++ : trendWorsening++;
+                            }
+                        } else if (entry[metric.id + 'Trend'] === 'down') {
+                            if (metric.id === 'averageVisits') {
+                                trendWorsening++; // Assume lower is always worse for trend count, or adjust as needed
+                            } else {
+                                higherIsBetter ? trendWorsening++ : trendImproving++;
+                            }
+                        } else {
+                            trendStable++;
+                        }
+                    });
                         // Calculate trend compared to previous week, taking higherIsBetter into account
 if (
     prevEntry && 
@@ -1547,7 +1548,7 @@ if (
         function getAlertLevel(value, target, higherIsBetter, metricId) { 
             if (value === null || value === undefined) return 'normal'; 
             if (target === null || target === undefined) {
-                 console.warn(`Missing benchmark for metric '${metric.id}' for the relevant week. Alert level defaulted to 'normal'.`); // Log to console instead of UI
+                 console.warn(`Missing benchmark for metric '${metricId}' for the relevant week. Alert level defaulted to 'normal'.`); // Log to console instead of UI
                  return 'normal'; 
             }
 
@@ -1561,7 +1562,7 @@ if (
     const onlyAlertIfHigher = ['cancel', 'noShow', 'noUpcoming', 'directAccess'];
 
     // For these metrics, only show alert if value > target
-    if (onlyAlertIfHigher.includes(metric.id)) {
+    if (onlyAlertIfHigher.includes(metricId)) {
         if (metricValue <= benchmarkValue) {
             return 'normal';
         }
@@ -1886,14 +1887,14 @@ if (
         
         // Helper to generate HTML for a metric table cell (Handles CSV header case)
         function generateMetricCell(clinicData, metricId) {
-            const metricDef = metricsDefinition.find(m => m.id === metric.id);
+            const metricDef = metricsDefinition.find(m => m.id === metricId);
             if (!metricDef) return '<td>Error</td>';
 
             // Use correct CSV header case (e.g., NewPatients)
-            const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
+            const csvHeader = metricDef.id.charAt(0).toUpperCase() + metricDef.id.slice(1);
             const value = clinicData[csvHeader];
-            const alert = clinicData[metric.id + 'Alert'] || 'normal';
-            const trend = clinicData[metric.id + 'Trend'] || 'same';
+            const alert = clinicData[metricDef.id + 'Alert'] || 'normal';
+            const trend = clinicData[metricId + 'Trend'] || 'same';
             
             // Get dynamic benchmark for display
             const weekKey = `${clinicData.Year}-W${clinicData.Week}`;
@@ -2295,10 +2296,10 @@ function filterTable() {
 
         // Handle selection of metric in historical tab
         function selectMetric(metricId) {
-            selectedMetric = metric.id;
+            selectedMetric = metricId;
             // Update active button style
             document.querySelectorAll('#metricSelector button').forEach(button => {
-                button.classList.toggle('active', button.dataset.metric === metric.id);
+                button.classList.toggle('active', button.dataset.metric === metricId);
             });
             updateHistoricalCharts();
             // Update detail chart if panel is open
