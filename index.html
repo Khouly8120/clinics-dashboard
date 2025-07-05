@@ -860,7 +860,7 @@
         // --- Configuration ---
         // HARDCODED Google Sheet URLs - Replace these if your published sheet URLs change
         const googleSheetDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=0&single=true&output=csv'; 
-        const googleSheetBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1294580086&single=true&output=csv'; 
+        const googleSheetBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EScDrpXoqWiuZpnfaKmrAzN/pub?gid=1294580086&single=true&output=csv'; 
 
         // --- Data Definitions ---
         // Note: AreaManagerNotes removed, AreaManagerNotesAlert kept (no benchmark)
@@ -1461,30 +1461,7 @@ function getAverageVisitsAlertLevel(current, previous) {
                             trendStable++;
                         }
                     });
-                        // Calculate trend compared to previous week, taking higherIsBetter into account
-if (
-    prevEntry && 
-    prevEntry[csvHeader] !== null && prevEntry[csvHeader] !== undefined &&
-    value !== null && value !== undefined &&
-    !isNaN(Number(prevEntry[csvHeader])) && !isNaN(Number(value))
-) {
-    const prevValue = Number(prevEntry[csvHeader]);
-    const currValue = Number(value);
-    if (currValue > prevValue) {
-        entry[metric.id + 'Trend'] = higherIsBetter ? 'up' : 'down';
-    } else if (currValue < prevValue) {
-        entry[metric.id + 'Trend'] = higherIsBetter ? 'down' : 'up';
-    } else {
-        entry[metric.id + 'Trend'] = 'same';
-    }
-} else {
-    entry[metric.id + 'Trend'] = 'same'; // Default trend if no previous data or value is not a number
-}
-                        // Count alerts for overall calculation
-                        if (entry[metric.id + 'Alert']) {
-                             overallAlertCounts[entry[metric.id + 'Alert']]++;
-                        }
-                        
+                    
                         // Count trends for weekly trend calculation
                         if (entry[metric.id + 'Trend'] === 'up') {
                             higherIsBetter ? trendImproving++ : trendWorsening++;
