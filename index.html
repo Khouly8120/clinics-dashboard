@@ -1411,9 +1411,9 @@ function getAverageVisitsAlertLevel(current, previous) {
                             }
                         } else {
                             // Get benchmark and direction from Benchma
-                            const higherIsBetterFlag = weeklyBenchmarks ? weeklyBenchmarks[csvHeader + 
-'_HigherIsBetter
-'] : null;
+                            const higherIsBetterFlag = weeklyBenchmarks 
+                            ? weeklyBenchmarks[csvHeader + '_HigherIsBetter'] 
+                            : null;
                             higherIsBetter = (higherIsBetterFlag === null || higherIsBetterFlag === undefined) ? true : higherIsBetterFlag;
                             const benchmarkValue = weeklyBenchmarks ? weeklyBenchmarks[csvHeader] : null;
                             entry[metric.id + 'Alert'] = getAlertLevel(value, benchmarkValue, higherIsBetter, metric.id);
