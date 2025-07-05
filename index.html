@@ -1462,16 +1462,6 @@ function getAverageVisitsAlertLevel(current, previous) {
                         }
                     });
                     
-                        // Count trends for weekly trend calculation
-                        if (entry[metric.id + 'Trend'] === 'up') {
-                            higherIsBetter ? trendImproving++ : trendWorsening++;
-                        } else if (entry[metric.id + 'Trend'] === 'down') {
-                             higherIsBetter ? trendWorsening++ : trendImproving++;
-                        } else {
-                            trendStable++;
-                        }
-                    });
-
                     // Determine overall alert level based on count of high/critical metrics
                     const highCriticalCount = overallAlertCounts.critical + overallAlertCounts.high;
                     if (highCriticalCount >= 8) {
