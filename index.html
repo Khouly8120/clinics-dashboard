@@ -1384,7 +1384,6 @@ function getAverageVisitsAlertLevel(current, previous) {
                     trendStable++; // No trend for notes alert
 
                     metricsDefinition.forEach(metric => {
-    const metric.id = metric.id;
     const csvHeader = metric.id.charAt(0).toUpperCase() + metric.id.slice(1);
     const value = entry[csvHeader];
 
