@@ -1542,8 +1542,9 @@ if (
         }
 
         // Helper function to determine alert level using DYNAMIC benchmarks and custom deviation thresholds
-        function getAlertLevel(value, target, higherIsBetter, metric.id) { // higherIsBetter might not be needed for this logic
-            // Handle missing data or missing benchmarks gracefully
+        // higherIsBetter might not be needed for this logic
+        // Handle missing data or missing benchmarks gracefully
+        function getAlertLevel(value, target, higherIsBetter, metric.id) { 
             if (value === null || value === undefined) return 'normal'; 
             if (target === null || target === undefined) {
                  console.warn(`Missing benchmark for metric '${metric.id}' for the relevant week. Alert level defaulted to 'normal'.`); // Log to console instead of UI
