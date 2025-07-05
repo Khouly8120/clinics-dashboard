@@ -1885,7 +1885,7 @@ if (
         }
         
         // Helper to generate HTML for a metric table cell (Handles CSV header case)
-        function generateMetricCell(clinicData, metric.id) {
+        function generateMetricCell(clinicData, metricId) {
             const metricDef = metricsDefinition.find(m => m.id === metric.id);
             if (!metricDef) return '<td>Error</td>';
 
