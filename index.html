@@ -880,7 +880,12 @@
         const googleSheetBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1294580086&single=true&output=csv'; 
         // DAILY metrics (Target Visits & Google Reviews)
         const googleSheetDailyDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1535490642&single=true&output=csv';
-        const googleSheetDailyBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1352823327&single=true&output=csv'; 
+        const googleSheetDailyBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1352823327&single=true&output=csv';
+
+        // --- Global variables for Daily Metrics ---
+        let allClinicsDailyData = {};
+        let dailyBenchmarkData = {};
+        let latestDailyDate = ''; 
 
         // --- Data Definitions ---
         // Note: AreaManagerNotes removed, AreaManagerNotesAlert kept (no benchmark)
@@ -1532,7 +1537,7 @@ function getAverageVisitsAlertLevel(current, previous) {
                     fetchCsvText(googleSheetDailyDataUrl),
                     fetchCsvText(googleSheetDailyBenchmarkUrl)
                 ]);
-                const dailyParsed = parseCsv(dailyText, ['Date','Clinic','TargetVisits','GoogleReviews']);
+                const dailyParsed = parseCsv(dailyText, ['Date','Clinic','Target of Visits','Google Reviews']);
                 const dailyBenchmarkParsed = parseCsv(dailyBenchmarkText, ['Date','Clinic','TargetVisits','TargetVisits_HigherIsBetter','GoogleReviews','GoogleReviews_HigherIsBetter']);
                 dailyBenchmarkParsed.forEach(r=>{
                     dailyBenchmarkData[r.Date+'|'+r.Clinic] = r;
