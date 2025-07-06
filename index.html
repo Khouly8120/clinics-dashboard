@@ -885,6 +885,7 @@
         // --- Global variables for Daily Metrics ---
         let allClinicsDailyData = {};
         let dailyBenchmarkData = {};
+let latestDailyBenchmarkByClinic = {}; // fallback map
         let latestDailyDate = ''; 
 
         // --- Data Definitions ---
@@ -1566,6 +1567,12 @@ function getAverageVisitsAlertLevel(current, previous) {
                 const dailyParsed = parseCsv(dailyText, ['Date','Clinic','Target of Visits','Google Reviews']);
                 const dailyBenchmarkParsed = parseCsv(dailyBenchmarkText, ['Date','Clinic','Target of Visits','Target of Visits_HigherIsBetter','Google Reviews','Google Reviews_HigherIsBetter']);
                 dailyBenchmarkParsed.forEach(r=>{
+                    // store exact date+clinic benchmark
+                    dailyBenchmarkData[r.Date+'|'+r.Clinic] = r;
+                    // keep latest benchmark per clinic as fallback
+                    if(!latestDailyBenchmarkByClinic[r.Clinic] || r.Date > latestDailyBenchmarkByClinic[r.Clinic].Date){
+                        latestDailyBenchmarkByClinic[r.Clinic] = r;
+                    }
                     dailyBenchmarkData[r.Date+'|'+r.Clinic] = r;
                 });
                 processAndStoreDailyData(dailyParsed);
@@ -1604,7 +1611,7 @@ function getAverageVisitsAlertLevel(current, previous) {
                 allClinicsDailyData[c].forEach(row=>{
                     ['Target of Visits','Google Reviews'].forEach(col=>{
                        const metricId = col==='Target of Visits'?'targetVisits':'googleReviews';
-                       const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic]||{};
+                       const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic] || latestDailyBenchmarkByClinic[row.Clinic] || {};
                        const higherFlag = bench[col+'_HigherIsBetter'];
                        const higherIsBetter = (higherFlag===undefined||higherFlag===null)?true:(higherFlag.toString().toLowerCase()==='true');
                        row[metricId+'Alert']=getAlertLevel(row[col], bench[col], higherIsBetter, metricId);
@@ -1631,7 +1638,7 @@ function getAverageVisitsAlertLevel(current, previous) {
             const metricNameMap={ targetVisits:'Target Visits', googleReviews:'Google Reviews' };
             const value = (metricId==='targetVisits')? row['Target of Visits'] : row['Google Reviews'];
             const alert = row[metricId+'Alert']||'normal';
-            const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic]||{};
+            const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic] || latestDailyBenchmarkByClinic[row.Clinic] || {};
             const targetVal = metricId==='targetVisits'
                 ? (bench['Target of Visits'] ?? bench['TargetVisits'])
                 : (bench['Google Reviews'] ?? bench['GoogleReviews']);
