@@ -1233,8 +1233,13 @@
                  return {};
             }
             
-            const expectedMetrics = metricsDefinition.map(m => m.id.charAt(0).toUpperCase() + m.id.slice(1));
-            const expectedFlags = metricsDefinition.map(m => m.id.charAt(0).toUpperCase() + m.id.slice(1) + '_HigherIsBetter');
+            // Exclude daily-only metrics when validating weekly benchmark CSV
+            const expectedMetrics = metricsDefinition
+                                      .filter(m=>!['targetVisits','googleReviews'].includes(m.id))
+                                      .map(m => m.id.charAt(0).toUpperCase() + m.id.slice(1));
+                        const expectedFlags = metricsDefinition
+                                      .filter(m=>!['targetVisits','googleReviews'].includes(m.id))
+                                      .map(m => m.id.charAt(0).toUpperCase() + m.id.slice(1) + '_HigherIsBetter');
             const missingMetrics = expectedMetrics.filter(h => !headers.includes(h));
             const missingFlags = expectedFlags.filter(h => !headers.includes(h));
             
