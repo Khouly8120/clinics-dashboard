@@ -1642,7 +1642,7 @@ function getAverageVisitsAlertLevel(current, previous) {
             const targetVal = metricId==='targetVisits'
                 ? (bench['Target of Visits'] ?? bench['TargetVisits'])
                 : (bench['Google Reviews'] ?? bench['GoogleReviews']);
-            const displayValue = (value===null||value===undefined||value==='')?'N/A':value;
+            const displayValue = (value===null||value===undefined||value==='') ? 'N/A' : value + '%';
             const targetText = (targetVal===null||targetVal===undefined||targetVal==='')? 'Target: N/A' : `Target: ${targetVal}`;
             return `<td class="metric-value">${displayValue}
                     <span class="alert-badge alert-${alert}">${alert.toUpperCase()}</span>
