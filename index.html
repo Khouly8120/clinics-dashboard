@@ -867,7 +867,7 @@
         google.charts.load('current', {'packages':['corechart', 'line', 'table']});
         google.charts.setOnLoadCallback(setupDashboard);
         
-        async function setupDashboard(){
+        async function setupDashboardAsync(){
             await Promise.all([loadDataAndBenchmarks(), loadDailyData()]);
             initializeTabs();
             renderCurrentWeek();
@@ -955,15 +955,15 @@
         // --- Core Functions ---
 
         // Initial setup function called after Google Charts loads
-        function setupDashboard() {
+        async function setupDashboard() {
             console.log("Dashboard setup initiated.");
-            initializeDatePickers(); 
+            initializeDatePickers();
             populateMetricSelector();
             
             if (googleSheetDataUrl && googleSheetBenchmarkUrl) {
                  console.log(`Attempting to autoload data from: ${googleSheetDataUrl}`);
                  console.log(`Attempting to autoload benchmarks from: ${googleSheetBenchmarkUrl}`);
-                 initializeDashboard(); // Start the main data loading and processing sequence
+                 await Promise.all([initializeDashboard(), loadDailyData()]); // load weekly and daily data in parallel
             } else {
                  addValidationMessage('error', "Configuration Error: Data or Benchmark Google Sheet URL is not configured in the script.");
                  displayValidationMessages();
