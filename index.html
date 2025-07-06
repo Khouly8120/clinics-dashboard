@@ -2133,8 +2133,8 @@ function filterTable() {
 
     // Decide base dataset: if a specific date is chosen, search ALL weeks; otherwise honour the time-period selector
     let baseData = [];
-    if (selectedDate) {
-        // Flatten allClinicsData {clinic: [rows]} into an array
+    if (selectedDate || timePeriod==='all') {
+        // Flatten all weeks
         Object.values(allClinicsData).forEach(arr => { if(Array.isArray(arr)) baseData.push(...arr); });
     } else {
         baseData = (timePeriod === 'current')
