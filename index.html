@@ -691,6 +691,7 @@
             <button class="tab-button active" onclick="switchTab(event, 'currentData')">Current Data</button>
             <button class="tab-button" onclick="switchTab(event, 'historicalTrends')">Historical Trends</button>
             <button class="tab-button" onclick="switchTab(event, 'comparisonTab')">Comparison</button>
+            <button class="tab-button" onclick="switchTab(event, 'dailyTab')">Daily Numbers</button>
         </div>
         
         <div class="tab-content active" id="currentData">
@@ -840,6 +841,15 @@
                  <p>Loading data...</p>
             </div>
         </div>
+
+        <div class="tab-content" id="dailyTab" style="display:none;">
+            <div class="table-header">Daily Numbers (last 7 days)</div>
+            <div class="responsive-table" style="overflow:auto;max-height:500px;">
+                <table id="dailyTable"><thead><tr>
+                    <th>Date</th><th>Clinic</th><th>Target Visits</th><th>Google Reviews</th>
+                </tr></thead><tbody id="dailyTableBody"><tr><td colspan="4" style="text-align:center;">Loading...</td></tr></tbody></table>
+            </div>
+        </div>
     </div>
 
     <div class="details-panel" id="detailsPanel">
@@ -856,11 +866,21 @@
         // Load Google Charts
         google.charts.load('current', {'packages':['corechart', 'line', 'table']});
         google.charts.setOnLoadCallback(setupDashboard);
+        
+        async function setupDashboard(){
+            await Promise.all([loadDataAndBenchmarks(), loadDailyData()]);
+            initializeTabs();
+            renderCurrentWeek();
+            renderDailyCurrent();
+        }
 
         // --- Configuration ---
         // HARDCODED Google Sheet URLs - Replace these if your published sheet URLs change
         const googleSheetDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=0&single=true&output=csv'; 
         const googleSheetBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1294580086&single=true&output=csv'; 
+        // DAILY metrics (Target Visits & Google Reviews)
+        const googleSheetDailyDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1535490642&single=true&output=csv';
+        const googleSheetDailyBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1352823327&single=true&output=csv'; 
 
         // --- Data Definitions ---
         // Note: AreaManagerNotes removed, AreaManagerNotesAlert kept (no benchmark)
@@ -884,15 +904,18 @@
             { id: 'confirmation', name: 'Confirmation %', type: 'percentage' },
             { id: 'directAccess', name: 'Direct Access %', type: 'percentage', higherIsBetter: false },
             { id: 'surveyCollection', name: 'Survey Collection %', type: 'percentage' },
-            { id: 'satisfaction', name: 'Hospitality/Clinical Satisfaction %', type: 'percentage' }
-        ];
+            { id: 'satisfaction', name: 'Hospitality/Clinical Satisfaction %', type: 'percentage' },
+            // --- Daily metrics ---
+            { id: 'targetVisits', name: 'Target of Visits', type: 'number' },
+            { id: 'googleReviews', name: 'Google Reviews', type: 'number' }
+         ];
         // Expected headers for the DATA sheet
         const expectedDataCsvHeaders = [
             'Clinic', 'Week', 'Year', 'Date', 'AreaManagerNotesAlert',
             'NewPatients', 'VisitsTarget', 'DailyDistribution', 'Utilization', 
             'Retention2nd', 'Retention5th', 'Retention10th', 'Retention15th', 
             'Cancel', 'NoShow', 'NoUpcoming', 'Units', 'InsuranceCoding', 
-            'SupportiveCoding', 'AverageVisits', 'Confirmation', 'DirectAccess', 'SurveyCollection', 'Satisfaction'
+            'SupportiveCoding', 'AverageVisits', 'Confirmation', 'DirectAccess', 'SurveyCollection', 'Satisfaction', 'TargetVisits', 'GoogleReviews'
         ];
         // Expected headers for the BENCHMARK sheet (Metric names + _HigherIsBetter)
         const expectedBenchmarkCsvHeaders = [
@@ -907,6 +930,10 @@
         let currentWeekData = []; // Data for the currently selected week/period
         let displayedData = []; // Data currently shown in the table/cards after filtering
         let availableWeeks = []; // Array of {year, week} objects found in data
+        // Daily globals
+        let allClinicsDailyData = {}; // { clinic: [{Date, ...}] }
+        let dailyBenchmarkData = {};  // { '2025-07-05': {TargetVisits:40,...}}
+        let latestDailyDate = '';
         let latestWeek = { year: 0, week: 0 };
         let previousWeek = { year: 0, week: 0 };
         let currentView = 'table';
@@ -1498,6 +1525,85 @@ function getAverageVisitsAlertLevel(current, previous) {
             return weekData;
         }
 
+        // --- Daily Data Functions ---
+        async function loadDailyData() {
+            try {
+                const [dailyText, dailyBenchmarkText] = await Promise.all([
+                    fetchCsvText(googleSheetDailyDataUrl),
+                    fetchCsvText(googleSheetDailyBenchmarkUrl)
+                ]);
+                const dailyParsed = parseCsv(dailyText, ['Date','Clinic','TargetVisits','GoogleReviews']);
+                const dailyBenchmarkParsed = parseCsv(dailyBenchmarkText, ['Date','Clinic','TargetVisits','TargetVisits_HigherIsBetter','GoogleReviews','GoogleReviews_HigherIsBetter']);
+                dailyBenchmarkParsed.forEach(r=>{
+                    dailyBenchmarkData[r.Date+'|'+r.Clinic] = r;
+                });
+                processAndStoreDailyData(dailyParsed);
+                console.log('Daily metrics loaded');
+            } catch(err){
+                console.error('Daily metrics load error',err);
+            }
+        }
+
+        function processAndStoreDailyData(rows){
+            if(!rows||rows.length===0) return;
+            allClinicsDailyData = {};
+            let maxDate = '';
+            rows.forEach(r=>{
+                const clinic = r.Clinic;
+                if(!allClinicsDailyData[clinic]) allClinicsDailyData[clinic]=[];
+                allClinicsDailyData[clinic].push(r);
+                if(r.Date>maxDate) maxDate=r.Date;
+            });
+            latestDailyDate = maxDate;
+            // keep only last 7 days per clinic
+            Object.keys(allClinicsDailyData).forEach(c=>{
+                allClinicsDailyData[c].sort((a,b)=>a.Date.localeCompare(b.Date));
+                allClinicsDailyData[c] = allClinicsDailyData[c].slice(-7);
+                // calculate alerts
+                allClinicsDailyData[c].forEach(row=>{
+                    ['TargetVisits','GoogleReviews'].forEach(col=>{
+                       const metricId = col==='TargetVisits'?'targetVisits':'googleReviews';
+                       const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic]||{};
+                       const higherFlag = bench[col+'_HigherIsBetter'];
+                       const higherIsBetter = (higherFlag===undefined||higherFlag===null)?true:(higherFlag.toString().toLowerCase()==='true');
+                       row[metricId+'Alert']=getAlertLevel(row[col], bench[col], higherIsBetter, metricId);
+                    });
+                });
+            });
+        }
+
+        async function fetchCsvText(url){
+            const res = await fetch(url);
+            if(!res.ok) throw new Error('HTTP '+res.status);
+            return res.text();
+        }
+        // --- Rendering for Daily Numbers ---
+        function renderDailyCurrent(){
+            const body = document.getElementById('dailyTableBody');
+            if(!body) return;
+            body.innerHTML='';
+            if(Object.keys(allClinicsDailyData).length===0){
+                body.innerHTML='<tr><td colspan="4" style="text-align:center;">No daily data</td></tr>';
+                return;
+            }
+            const rows=[];
+            Object.keys(allClinicsDailyData).forEach(clinic=>{
+                allClinicsDailyData[clinic].forEach(r=>rows.push(r));
+            });
+            // Keep only rows within last 7 days overall
+            rows.sort((a,b)=> b.Date.localeCompare(a.Date));
+            const cutoffDate = moment(latestDailyDate).subtract(6,'days').format('YYYY-MM-DD');
+            const filtered = rows.filter(r=> r.Date>=cutoffDate);
+            filtered.forEach(r=>{
+                const tr=document.createElement('tr');
+                tr.innerHTML=`<td>${r.Date}</td>`+
+                              `<td class="clinic-name">${r.Clinic}</td>`+
+                              `<td><span class="alert-badge alert-${r.targetVisitsAlert}">${r.TargetVisits ?? ''}</span></td>`+
+                              `<td><span class="alert-badge alert-${r.googleReviewsAlert}">${r.GoogleReviews ?? ''}</span></td>`;
+                body.appendChild(tr);
+            });
+        }
+        
         // --- Helper Functions ---
 
         // Function to get trend arrow symbol
