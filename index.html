@@ -2123,7 +2123,8 @@ function getAverageVisitsAlertLevel(current, previous) {
         // Filter table based on selected alert level, clinic, and search input
         // Filter table based on selected alert level, clinic, search input, and date
 function filterTable() {
-    const selectedDate = document.getElementById('dateFilter').value; // YYYY-MM-DD or ''
+    const selectedRaw  = document.getElementById('dateFilter').value; // browser-locale string or ISO
+    const selectedDate = selectedRaw ? moment(selectedRaw, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY']).format('YYYY-MM-DD') : '';
     if (availableWeeks.length === 0) return; // No data yet
 
     const alertFilter   = document.getElementById('alertFilter').value;
