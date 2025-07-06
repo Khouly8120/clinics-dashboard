@@ -1626,11 +1626,32 @@ function getAverageVisitsAlertLevel(current, previous) {
             if(exportBtn) exportBtn.disabled=false;
         }
         // --- Rendering for Daily Numbers ---
+        // Generate HTML for a daily metric cell similar to weekly view
+        function generateDailyMetricCell(row, metricId){
+            const metricNameMap={ targetVisits:'Target Visits', googleReviews:'Google Reviews' };
+            const value = (metricId==='targetVisits')? row['Target of Visits'] : row['Google Reviews'];
+            const alert = row[metricId+'Alert']||'normal';
+            const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic]||{};
+            const targetVal = metricId==='targetVisits'? bench['TargetVisits'] : bench['GoogleReviews'];
+            const displayValue = (value===null||value===undefined||value==='')?'N/A':value;
+            const targetText = (targetVal===null||targetVal===undefined||targetVal==='')? 'Target: N/A' : `Target: ${targetVal}`;
+            return `<td class="metric-value">${displayValue}
+                    <span class="alert-badge alert-${alert}">${alert.toUpperCase()}</span>
+                    <div class="deviation">${targetText}</div></td>`;
+        }
+
         function renderDailyCurrent(){
             const selectedDate=document.getElementById('dateFilter')?.value;
 
             const body = document.getElementById('dailyTableBody');
             if(!body) return;
+            // Build table header if empty
+            if(body.innerHTML===''){
+                const thead=document.getElementById('dailyTableHead');
+                if(thead){
+                    thead.innerHTML='<tr><th>Date</th><th>Clinic</th><th>Target Visits</th><th>Google Reviews</th></tr>';
+                }
+            }
             body.innerHTML='';
             if(Object.keys(allClinicsDailyData).length===0){
                 body.innerHTML='<tr><td colspan="4" style="text-align:center;">No daily data</td></tr>';
@@ -1649,14 +1670,13 @@ function getAverageVisitsAlertLevel(current, previous) {
             const cutoffDate = moment(latestDailyDate).subtract(6,'days').format('YYYY-MM-DD');
             const filtered = candidateRows.filter(r=> r.Date>=cutoffDate);
             filtered.forEach(r=>{
-                const tr=document.createElement('tr');
-                tr.innerHTML=`<td>${r.Date}</td>`+
-                              `<td class="clinic-name">${r.Clinic}</td>`+
-                              `<td><span class="alert-badge alert-${r.targetVisitsAlert}">${r['Target of Visits'] ?? ''}</span></td>`+
-                              `<td><span class="alert-badge alert-${r.googleReviewsAlert}">${r['Google Reviews'] ?? ''}</span></td>`;
-                body.appendChild(tr);
-            });
-        }
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${r.Date}</td><td class="clinic-name">${r.Clinic}</td>
+            ${generateDailyMetricCell(r,'targetVisits')}
+            ${generateDailyMetricCell(r,'googleReviews')}`;
+        body.appendChild(tr);
+    });
+}
         
         // --- Helper Functions ---
 
