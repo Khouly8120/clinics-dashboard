@@ -936,9 +936,9 @@
         let displayedData = []; // Data currently shown in the table/cards after filtering
         let availableWeeks = []; // Array of {year, week} objects found in data
         // Daily globals
-        let allClinicsDailyData = {}; // { clinic: [{Date, ...}] }
-        let dailyBenchmarkData = {};  // { '2025-07-05': {TargetVisits:40,...}}
-        let latestDailyDate = '';
+        allClinicsDailyData = {}; // reset daily data
+        dailyBenchmarkData = {};  // reset daily benchmarks
+        latestDailyDate = '';
         let latestWeek = { year: 0, week: 0 };
         let previousWeek = { year: 0, week: 0 };
         let currentView = 'table';
