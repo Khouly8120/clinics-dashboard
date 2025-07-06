@@ -842,7 +842,7 @@
             </div>
         </div>
 
-        <div class="tab-content" id="dailyTab" style="display:none;">
+        <div class="tab-content" id="dailyTab">
             <div class="table-header">Daily Numbers (last 7 days)</div>
             <div class="responsive-table" style="overflow:auto;max-height:500px;">
                 <table id="dailyTable"><thead><tr>
@@ -1561,8 +1561,8 @@ function getAverageVisitsAlertLevel(current, previous) {
                 allClinicsDailyData[c] = allClinicsDailyData[c].slice(-7);
                 // calculate alerts
                 allClinicsDailyData[c].forEach(row=>{
-                    ['TargetVisits','GoogleReviews'].forEach(col=>{
-                       const metricId = col==='TargetVisits'?'targetVisits':'googleReviews';
+                    ['Target of Visits','Google Reviews'].forEach(col=>{
+                       const metricId = col==='Target of Visits'?'targetVisits':'googleReviews';
                        const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic]||{};
                        const higherFlag = bench[col+'_HigherIsBetter'];
                        const higherIsBetter = (higherFlag===undefined||higherFlag===null)?true:(higherFlag.toString().toLowerCase()==='true');
@@ -1598,8 +1598,8 @@ function getAverageVisitsAlertLevel(current, previous) {
                 const tr=document.createElement('tr');
                 tr.innerHTML=`<td>${r.Date}</td>`+
                               `<td class="clinic-name">${r.Clinic}</td>`+
-                              `<td><span class="alert-badge alert-${r.targetVisitsAlert}">${r.TargetVisits ?? ''}</span></td>`+
-                              `<td><span class="alert-badge alert-${r.googleReviewsAlert}">${r.GoogleReviews ?? ''}</span></td>`;
+                              `<td><span class="alert-badge alert-${r.targetVisitsAlert}">${r['Target of Visits'] ?? ''}</span></td>`+
+                              `<td><span class="alert-badge alert-${r.googleReviewsAlert}">${r['Google Reviews'] ?? ''}</span></td>`;
                 body.appendChild(tr);
             });
         }
