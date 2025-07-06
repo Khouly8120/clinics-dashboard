@@ -2123,25 +2123,34 @@ function getAverageVisitsAlertLevel(current, previous) {
         // Filter table based on selected alert level, clinic, and search input
         // Filter table based on selected alert level, clinic, search input, and date
 function filterTable() {
-    const selectedDate = document.getElementById('dateFilter').value;
-    if (availableWeeks.length === 0) return; // Don't filter if no data loaded
+    const selectedDate = document.getElementById('dateFilter').value; // YYYY-MM-DD or ''
+    if (availableWeeks.length === 0) return; // No data yet
 
-    const alertFilter = document.getElementById('alertFilter').value;
-    const clinicFilter = document.getElementById('clinicFilter').value;
-    const searchInput = document.getElementById('searchInput').value.toLowerCase();
-    const timePeriod = document.getElementById('timePeriodFilter').value;
+    const alertFilter   = document.getElementById('alertFilter').value;
+    const clinicFilter  = document.getElementById('clinicFilter').value;
+    const searchInput   = document.getElementById('searchInput').value.toLowerCase();
+    const timePeriod    = document.getElementById('timePeriodFilter').value;
 
-    // Pick source data based on selected time period
-    const sourceData = (timePeriod === 'current')
-        ? getDataForWeek(latestWeek.year, latestWeek.week)
-        : getDataForWeek(previousWeek.year, previousWeek.week);
+    // Decide base dataset: if a specific date is chosen, search ALL weeks; otherwise honour the time-period selector
+    let baseData = [];
+    if (selectedDate) {
+        // Flatten allClinicsData {clinic: [rows]} into an array
+        Object.values(allClinicsData).forEach(arr => { if(Array.isArray(arr)) baseData.push(...arr); });
+    } else {
+        baseData = (timePeriod === 'current')
+            ? getDataForWeek(latestWeek.year, latestWeek.week)
+            : getDataForWeek(previousWeek.year, previousWeek.week);
+    }
 
-    // Filter data
-    displayedData = sourceData.filter(clinic => {
-        const matchesAlert = alertFilter === 'all' || clinic.overallAlert === alertFilter;
+    displayedData = baseData.filter(clinic => {
+        const matchesAlert  = alertFilter === 'all' || clinic.overallAlert === alertFilter;
         const matchesClinic = clinicFilter === 'all' || clinic.Clinic === clinicFilter;
         const matchesSearch = clinic.Clinic.toLowerCase().includes(searchInput);
-        const matchesDate = !selectedDate || clinic.Date === selectedDate; // Use .Date or .date based on your parsed data
+
+        // Normalise clinic date to ISO for comparison (handles various formats)
+        const rowDateRaw = clinic.Date || clinic.date || '';
+        const rowDateIso = rowDateRaw ? moment(rowDateRaw, ['YYYY-MM-DD','MM-DD-YYYY','MM/DD/YYYY','M/D/YYYY']).format('YYYY-MM-DD') : '';
+        const matchesDate = !selectedDate || rowDateIso === selectedDate;
 
         return matchesAlert && matchesClinic && matchesSearch && matchesDate;
     });
