@@ -2134,6 +2134,10 @@ function filterTable() {
             document.getElementById(tabId).classList.add('active');
             event.currentTarget.classList.add('active');
 
+            // If switching to daily tab, refresh its data view
+            if(tabId === 'dailyTab'){
+                renderDailyCurrent();
+            }
             // If switching to historical tab, update charts
             if (tabId === 'historicalTrends' && availableWeeks.length > 0) {
                 updateHistoricalCharts();
