@@ -2147,10 +2147,20 @@ function filterTable() {
         const matchesClinic = clinicFilter === 'all' || clinic.Clinic === clinicFilter;
         const matchesSearch = clinic.Clinic.toLowerCase().includes(searchInput);
 
-        // Normalise clinic date to ISO for comparison (handles various formats)
-        const rowDateRaw = clinic.Date || clinic.date || '';
-        const rowDateIso = rowDateRaw ? moment(rowDateRaw, ['YYYY-MM-DD','MM-DD-YYYY','MM/DD/YYYY','M/D/YYYY']).format('YYYY-MM-DD') : '';
-        const matchesDate = !selectedDate || rowDateIso === selectedDate;
+        let matchesDate = true;
+        if(selectedDate){
+            // Attempt exact date match first (for daily views or if weekly row stores explicit date)
+            const rowDateRaw = clinic.Date || clinic.date || '';
+            const rowDateIso = rowDateRaw ? moment(rowDateRaw, ['YYYY-MM-DD','MM-DD-YYYY','MM/DD/YYYY','M/D/YYYY']).format('YYYY-MM-DD') : '';
+            matchesDate = (rowDateIso === selectedDate);
+            if(!matchesDate && clinic.Year && clinic.Week){
+                // If weekly entry: compare ISO week/year of selected date
+                const selMoment = moment(selectedDate, 'YYYY-MM-DD');
+                const selYear = selMoment.isoWeekYear();
+                const selWeek = selMoment.isoWeek();
+                matchesDate = (selYear == clinic.Year && selWeek == clinic.Week);
+            }
+        }
 
         return matchesAlert && matchesClinic && matchesSearch && matchesDate;
     });
