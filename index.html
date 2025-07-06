@@ -1597,8 +1597,17 @@ function getAverageVisitsAlertLevel(current, previous) {
             if(!res.ok) throw new Error('HTTP '+res.status);
             return res.text();
         }
+        // Enable UI controls after data loads
+        function enableControls(){
+            const df=document.getElementById('dateFilter');
+            if(df) df.disabled=false;
+            const exportBtn=document.querySelector('button[onclick="exportData()"]');
+            if(exportBtn) exportBtn.disabled=false;
+        }
         // --- Rendering for Daily Numbers ---
         function renderDailyCurrent(){
+            const selectedDate=document.getElementById('dateFilter')?.value;
+
             const body = document.getElementById('dailyTableBody');
             if(!body) return;
             body.innerHTML='';
@@ -1612,8 +1621,12 @@ function getAverageVisitsAlertLevel(current, previous) {
             });
             // Keep only rows within last 7 days overall
             rows.sort((a,b)=> b.Date.localeCompare(a.Date));
+            let candidateRows=rows;
+            if(selectedDate){
+                candidateRows=candidateRows.filter(r=>r.Date===selectedDate);
+            }
             const cutoffDate = moment(latestDailyDate).subtract(6,'days').format('YYYY-MM-DD');
-            const filtered = rows.filter(r=> r.Date>=cutoffDate);
+            const filtered = candidateRows.filter(r=> r.Date>=cutoffDate);
             filtered.forEach(r=>{
                 const tr=document.createElement('tr');
                 tr.innerHTML=`<td>${r.Date}</td>`+
