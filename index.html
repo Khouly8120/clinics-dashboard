@@ -1543,6 +1543,8 @@ function getAverageVisitsAlertLevel(current, previous) {
                     dailyBenchmarkData[r.Date+'|'+r.Clinic] = r;
                 });
                 processAndStoreDailyData(dailyParsed);
+                // Refresh Daily Numbers tab now that data is ready
+                renderDailyCurrent();
                 console.log('Daily metrics loaded');
             } catch(err){
                 console.error('Daily metrics load error',err);
