@@ -1554,6 +1554,14 @@ function getAverageVisitsAlertLevel(current, previous) {
             allClinicsDailyData = {};
             let maxDate = '';
             rows.forEach(r=>{
+                // Normalize date to ISO (YYYY-MM-DD) to allow reliable chronological sort/comparison
+                const isoDate = moment(r.Date, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY','DD/MM/YYYY','D/M/YYYY']).format('YYYY-MM-DD');
+                r.Date = isoDate;
+                // Convert metric values to numbers where possible
+                ['Target of Visits','Google Reviews'].forEach(col=>{
+                    const val = parseFloat(r[col]);
+                    if(!isNaN(val)) r[col] = val;
+                });
                 const clinic = r.Clinic;
                 if(!allClinicsDailyData[clinic]) allClinicsDailyData[clinic]=[];
                 allClinicsDailyData[clinic].push(r);
