@@ -1643,16 +1643,71 @@ function getAverageVisitsAlertLevel(current, previous) {
                 ? (bench['Target of Visits'] ?? bench['TargetVisits'])
                 : (bench['Google Reviews'] ?? bench['GoogleReviews']);
             const displayValue = (value===null||value===undefined||value==='') ? 'N/A' : value + '%';
-            const targetText = (targetVal===null||targetVal===undefined||targetVal==='')? 'Target: N/A' : `Target: ${targetVal}`;
+            const targetText = (targetVal===null||targetVal===undefined||targetVal==='')? 'Target: N/A' : `Target: ${targetVal}%`;
             return `<td class="metric-value">${displayValue}
                     <span class="alert-badge alert-${alert}">${alert.toUpperCase()}</span>
                     <div class="deviation">${targetText}</div></td>`;
         }
 
         function renderDailyCurrent(){
-            const selectedDate=document.getElementById('dateFilter')?.value;
+            const selectedDateRaw = document.getElementById('dateFilter')?.value;
+            const selectedDate = selectedDateRaw ? moment(selectedDateRaw, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY']).format('YYYY-MM-DD') : '';
 
-            const body = document.getElementById('dailyTableBody');
+            const tbody = document.getElementById('dailyTableBody');
+            const thead = document.getElementById('dailyTableHead');
+            if(!tbody) return;
+
+            // Build table header (Clinic as first column; percentage columns)
+            if(thead){
+                thead.innerHTML = '<tr><th>Clinic</th><th>Target %</th><th>Achieved %</th></tr>';
+            }
+            tbody.innerHTML = '';
+
+            // Collect rows (limit to last 7 days overall like before)
+            let rows=[];
+            Object.keys(allClinicsDailyData).forEach(clinic=>{
+                allClinicsDailyData[clinic].forEach(r=>rows.push(r));
+            });
+
+            rows.sort((a,b)=> b.Date.localeCompare(a.Date));
+
+            // Keep within last 7 overall days
+            const cutoffDate = moment(latestDailyDate).subtract(6,'days').format('YYYY-MM-DD');
+            rows = rows.filter(r=> r.Date>=cutoffDate);
+
+            if(selectedDate){
+                rows = rows.filter(r=> r.Date===selectedDate);
+            }
+
+            // Group by date
+            const grouped = {};
+            rows.forEach(r=>{
+                if(!grouped[r.Date]) grouped[r.Date]=[];
+                grouped[r.Date].push(r);
+            });
+
+            const orderedDates = Object.keys(grouped).sort((a,b)=> b.localeCompare(a));
+            orderedDates.forEach(date=>{
+                // Date header row spanning all columns
+                const dateHeader=document.createElement('tr');
+                dateHeader.className='date-header';
+                dateHeader.innerHTML = `<td colspan="3" style="background:#6c63ff;color:white;font-weight:bold;position:sticky;left:0;">${moment(date).format('MMM D, YYYY')}</td>`;
+                tbody.appendChild(dateHeader);
+
+                // Sort clinics alphabetically for this date
+                grouped[date].sort((a,b)=>a.Clinic.localeCompare(b.Clinic)).forEach(r=>{
+                    const tr=document.createElement('tr');
+                    tr.innerHTML = `<td class="clinic-name">${r.Clinic}</td>
+                        ${generateDailyMetricCell(r,'targetVisits')}
+                        ${generateDailyMetricCell(r,'googleReviews')}`;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+// --- end of updated renderDailyCurrent ---
+
+
+
             if(!body) return;
             // Build table header if empty
             if(body.innerHTML===''){
