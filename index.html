@@ -2157,8 +2157,8 @@ function getAverageVisitsAlertLevel(current, previous) {
         function generateMetricCell(clinicData, metricId) {
             const metricDef = metricsDefinition.find(m => m.id === metricId);
             if (!metricDef) return '<td>Error</td>';
-{{ ... }}
 
+            
             // Use correct CSV header case (e.g., NewPatients)
             const csvHeader = metricDef.id.charAt(0).toUpperCase() + metricDef.id.slice(1);
             const value = clinicData[csvHeader];
