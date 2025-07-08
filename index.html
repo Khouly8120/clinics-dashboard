@@ -625,7 +625,8 @@
                 grid-template-columns: 1fr;
             }
         }
-    </style>
+    .pivot-date{ text-align:center; }
+</style>
 </head>
 <body>
     <div class="loading-overlay" id="loadingOverlay">
@@ -843,7 +844,8 @@
 
         <div class="tab-content" id="dailyTab">
             <div class="table-header">Daily Numbers 
-                <input type="text" id="dateRangePickerDaily" class="date-range-picker" style="margin-left:15px;" onchange="renderDailyPivot()">
+                <label for="dateRangePickerDaily" style="margin-left:15px;font-weight:bold;">Filter by Date:</label>
+                <input type="text" id="dateRangePickerDaily" class="date-range-picker" placeholder="mm/dd/yyyy - mm/dd/yyyy" style="margin-left:8px;" onchange="renderDailyPivot()">
                 <select id="dailyMetricSelector" style="margin-left:15px;" onchange="renderDailyPivot()">
                     <option value="targetVisits">Target Visits</option>
                     <option value="googleReviews">Google Reviews</option>
@@ -1712,7 +1714,7 @@ function getAverageVisitsAlertLevel(current, previous) {
             }
             // header row
             let headerRow='<tr><th>Clinic / Date</th>';
-            dates.forEach(d=>{headerRow+=`<th>${moment(d).format('MMM D, YYYY')}</th>`;});
+            dates.forEach(d=>{headerRow+=`<th class="pivot-date">${moment(d).format('MMM D, YYYY')}</th>`;});
             headerRow+='</tr>';
             thead.innerHTML=headerRow;
             // clinics rows
