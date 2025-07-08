@@ -1859,6 +1859,11 @@ function getAverageVisitsAlertLevel(current, previous) {
         function populateTimePeriodFilter() {
             const selector = document.getElementById('timePeriodFilter');
             selector.innerHTML = ''; // Clear existing
+            // Add "All Weeks" option so users can view data across all weeks
+            const optionAllWeeks = document.createElement('option');
+            optionAllWeeks.value = 'all';
+            optionAllWeeks.textContent = 'All Weeks';
+            selector.appendChild(optionAllWeeks)
             
             if (latestWeek.year > 0) {
                  const optionCurrent = document.createElement('option');
@@ -2180,7 +2185,14 @@ function filterTable() {
         function changeTimePeriod() {
              if (availableWeeks.length === 0) return;
              const timePeriod = document.getElementById('timePeriodFilter').value;
-             currentWeekData = (timePeriod === 'current') ? getDataForWeek(latestWeek.year, latestWeek.week) : getDataForWeek(previousWeek.year, previousWeek.week);
+             if(timePeriod === 'current') {
+                 currentWeekData = getDataForWeek(latestWeek.year, latestWeek.week);
+             } else if(timePeriod === 'previous') {
+                 currentWeekData = getDataForWeek(previousWeek.year, previousWeek.week);
+             } else {
+                 // 'all' selected – don't restrict currentWeekData; it will be derived in filterTable
+                 currentWeekData = [];
+             }
              filterTable(); // Re-apply filters for the new time period
         }
 
