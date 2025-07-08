@@ -843,11 +843,16 @@
         </div>
 
         <div class="tab-content" id="dailyTab">
-            <div class="table-header">Daily Numbers (last 7 days)</div>
+            <div class="table-header">Daily Numbers (last 7 days)
+                <select id="dailyMetricSelector" style="margin-left:15px;" onchange="renderDailyPivot()">
+                    <option value="targetVisits">Target Visits</option>
+                    <option value="googleReviews">Google Reviews</option>
+                    <option value="newPatients">New Patients Target</option>
+                </select>
+            </div>
             <div class="responsive-table" style="overflow:auto;max-height:500px;">
-                <table id="dailyTable"><thead><tr>
-                    <th>Date</th><th>Clinic</th><th>Target Visits</th><th>Google Reviews</th>
-                </tr></thead><tbody id="dailyTableBody"><tr><td colspan="4" style="text-align:center;">Loading...</td></tr></tbody></table>
+                <table id="dailyTable"><thead id="dailyTableHead"></thead>
+                    <tbody id="dailyTableBody"><tr><td style="text-align:center;">Loading...</td></tr></tbody></table>
             </div>
         </div>
     </div>
@@ -1564,8 +1569,8 @@ function getAverageVisitsAlertLevel(current, previous) {
                     fetchCsvText(googleSheetDailyDataUrl),
                     fetchCsvText(googleSheetDailyBenchmarkUrl)
                 ]);
-                const dailyParsed = parseCsv(dailyText, ['Date','Clinic','Target of Visits','Google Reviews']);
-                const dailyBenchmarkParsed = parseCsv(dailyBenchmarkText, ['Date','Clinic','Target of Visits','Target of Visits_HigherIsBetter','Google Reviews','Google Reviews_HigherIsBetter']);
+                const dailyParsed = parseCsv(dailyText, ['Date','Clinic','Target of Visits','Google Reviews','New Patients Target']);
+                const dailyBenchmarkParsed = parseCsv(dailyBenchmarkText, ['Date','Clinic','Target of Visits','Target of Visits_HigherIsBetter','Google Reviews','Google Reviews_HigherIsBetter','New Patients Target','New Patients Target_HigherIsBetter']);
                 dailyBenchmarkParsed.forEach(r=>{
                     // store exact date+clinic benchmark
                     dailyBenchmarkData[r.Date+'|'+r.Clinic] = r;
@@ -1593,7 +1598,7 @@ function getAverageVisitsAlertLevel(current, previous) {
                 const isoDate = moment(r.Date, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY','DD/MM/YYYY','D/M/YYYY']).format('YYYY-MM-DD');
                 r.Date = isoDate;
                 // Convert metric values to numbers where possible
-                ['Target of Visits','Google Reviews'].forEach(col=>{
+                ['Target of Visits','Google Reviews','New Patients Target'].forEach(col=>{
                     const val = parseFloat(r[col]);
                     if(!isNaN(val)) r[col] = val;
                 });
@@ -1609,8 +1614,10 @@ function getAverageVisitsAlertLevel(current, previous) {
                 allClinicsDailyData[c] = allClinicsDailyData[c].slice(-7);
                 // calculate alerts
                 allClinicsDailyData[c].forEach(row=>{
-                    ['Target of Visits','Google Reviews'].forEach(col=>{
-                       const metricId = col==='Target of Visits'?'targetVisits':'googleReviews';
+                    ['Target of Visits','Google Reviews','New Patients Target'].forEach(col=>{                       let metricId;
+                       if(col==='Target of Visits') metricId='targetVisits';
+                       else if(col==='Google Reviews') metricId='googleReviews';
+                       else metricId='newPatients';
                        const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic] || latestDailyBenchmarkByClinic[row.Clinic] || {};
                        const higherFlag = bench[col+'_HigherIsBetter'];
                        const higherIsBetter = (higherFlag===undefined||higherFlag===null)?true:(higherFlag.toString().toLowerCase()==='true');
@@ -1649,7 +1656,44 @@ function getAverageVisitsAlertLevel(current, previous) {
                     <div class="deviation">${targetText}</div></td>`;
         }
 
-        function renderDailyCurrent(){
+        function renderDailyPivot(){
+            const metricId = document.getElementById('dailyMetricSelector').value || 'targetVisits';
+            const metricToColumn = { targetVisits:'Target of Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target' };
+            const metricHeader = metricToColumn[metricId];
+            const tbody=document.getElementById('dailyTableBody');
+            const thead=document.getElementById('dailyTableHead');
+            if(!tbody||!thead) return;
+            tbody.innerHTML='';
+            thead.innerHTML='';
+            if(Object.keys(allClinicsDailyData).length===0){
+                tbody.innerHTML='<tr><td style="text-align:center;">No daily data</td></tr>';return;
+            }
+            // Collect dates
+            let dateSet=new Set();
+            Object.values(allClinicsDailyData).forEach(arr=>arr.forEach(r=>dateSet.add(r.Date)));
+            let dates=[...dateSet].sort((a,b)=>a.localeCompare(b));
+            // keep last 7
+            dates=dates.slice(-7);
+            // header row
+            let headerRow='<tr><th>Clinic / Date</th>';
+            dates.forEach(d=>{headerRow+=`<th>${moment(d).format('MMM D')}</th>`;});
+            headerRow+='</tr>';
+            thead.innerHTML=headerRow;
+            // clinics rows
+            const clinics=Object.keys(allClinicsDailyData).sort((a,b)=>a.localeCompare(b));
+            clinics.forEach(clinic=>{
+                let rowHtml=`<tr><td class="clinic-name">${clinic}</td>`;
+                dates.forEach(d=>{
+                    const rec=allClinicsDailyData[clinic].find(r=>r.Date===d);
+                    const val=(rec&&rec[metricHeader]!==undefined&&rec[metricHeader]!==null)?rec[metricHeader]:'N/A';
+                    const display=(val==='N/A')?val:val+'%';
+                    rowHtml+=`<td>${display}</td>`;
+                });
+                rowHtml+='</tr>';
+                tbody.innerHTML+=rowHtml;
+            });
+        }
+// OLD renderDailyCurrent removed for pivot
             const selectedDateRaw = document.getElementById('dateFilter')?.value;
             const selectedDate = selectedDateRaw ? moment(selectedDateRaw, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY']).format('YYYY-MM-DD') : '';
 
@@ -1704,7 +1748,7 @@ function getAverageVisitsAlertLevel(current, previous) {
                 });
             });
         }
-// --- end of updated renderDailyCurrent ---
+// --- end of updated renderDailyPivot ---
 
 
 
