@@ -837,13 +837,13 @@
             </div>
 
             <div class="comparison-results" id="comparisonResults">
-                <!-- Comparison results will be displayed here -->
                  <p>Loading data...</p>
             </div>
         </div>
 
         <div class="tab-content" id="dailyTab">
-            <div class="table-header">Daily Numbers (last 7 days)
+            <div class="table-header">Daily Numbers 
+                <input type="text" id="dateRangePickerDaily" class="date-range-picker" style="margin-left:15px;" onchange="renderDailyPivot()">
                 <select id="dailyMetricSelector" style="margin-left:15px;" onchange="renderDailyPivot()">
                     <option value="targetVisits">Target Visits</option>
                     <option value="googleReviews">Google Reviews</option>
@@ -964,6 +964,7 @@ let latestDailyBenchmarkByClinic = {}; // fallback map
         async function setupDashboard() {
             console.log("Dashboard setup initiated.");
             initializeDatePickers();
+            initializeDailyRangePicker();
             populateMetricSelector();
             
             if (googleSheetDataUrl && googleSheetBenchmarkUrl) {
@@ -1640,6 +1641,26 @@ function getAverageVisitsAlertLevel(current, previous) {
             if(exportBtn) exportBtn.disabled=false;
         }
         // --- Rendering for Daily Numbers ---
+        // Initialize daterangepicker for Daily Numbers tab (called after libraries load)
+        function initializeDailyRangePicker(){
+            if(typeof $ === 'undefined' || !$('#dateRangePickerDaily').daterangepicker) return;
+            const picker = $('#dateRangePickerDaily');
+            picker.daterangepicker({
+                opens:'left',
+                autoUpdateInput:false,
+                locale:{cancelLabel:'Clear'}
+            });
+            picker.on('apply.daterangepicker', function(ev, picker){
+                const start = picker.startDate.format('YYYY-MM-DD');
+                const end = picker.endDate.format('YYYY-MM-DD');
+                this.value = start + ' - ' + end;
+                renderDailyPivot();
+            });
+            picker.on('cancel.daterangepicker', function(){
+                this.value='';
+                renderDailyPivot();
+            });
+        }
         // Generate HTML for a daily metric cell similar to weekly view
         function generateDailyMetricCell(row, metricId){
             const metricNameMap={ targetVisits:'Target Visits', googleReviews:'Google Reviews' };
@@ -1676,11 +1697,22 @@ function getAverageVisitsAlertLevel(current, previous) {
             let dateSet=new Set();
             Object.values(allClinicsDailyData).forEach(arr=>arr.forEach(r=>dateSet.add(r.Date)));
             let dates=[...dateSet].sort((a,b)=>a.localeCompare(b));
-            // keep last 7
-            dates=dates.slice(-7);
+            // Filter by selected range if provided, else last 7 days
+            const rangeVal = document.getElementById('dateRangePickerDaily').value;
+            let startDate,endDate;
+            if(rangeVal && rangeVal.includes(' - ')){
+                const [s,e]=rangeVal.split(' - ');
+                startDate=s; endDate=e;
+            }
+            if(startDate && endDate){
+                dates = dates.filter(d=> d>=startDate && d<=endDate);
+            } else {
+                // default to last 7 days
+                dates = dates.slice(-7);
+            }
             // header row
             let headerRow='<tr><th>Clinic / Date</th>';
-            dates.forEach(d=>{headerRow+=`<th>${moment(d).format('MMM D')}</th>`;});
+            dates.forEach(d=>{headerRow+=`<th>${moment(d).format('MMM D, YYYY')}</th>`;});
             headerRow+='</tr>';
             thead.innerHTML=headerRow;
             // clinics rows
@@ -2344,6 +2376,9 @@ function filterTable() {
 
             // If switching to daily tab, refresh its data view
             if(tabId === 'dailyTab'){
+                if(!document.getElementById('dateRangePickerDaily').value){
+                    initializeDailyRangePicker();
+                }
                 renderDailyCurrent();
             }
             // If switching to historical tab, update charts
