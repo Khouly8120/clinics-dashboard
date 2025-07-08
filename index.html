@@ -1694,7 +1694,7 @@ function getAverageVisitsAlertLevel(current, previous) {
             });
         }
 // OLD renderDailyCurrent removed for pivot
-            const selectedDateRaw = document.getElementById('dateFilter')?.value;
+            /* const selectedDateRaw = document.getElementById('dateFilter')?.value;
             const selectedDate = selectedDateRaw ? moment(selectedDateRaw, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY']).format('YYYY-MM-DD') : '';
 
             const tbody = document.getElementById('dailyTableBody');
@@ -1749,6 +1749,10 @@ function getAverageVisitsAlertLevel(current, previous) {
             });
         }
 // --- end of updated renderDailyPivot ---
+        // Compatibility wrapper for legacy calls
+        function renderDailyCurrent(){
+            renderDailyPivot();
+        }
 
 
 
