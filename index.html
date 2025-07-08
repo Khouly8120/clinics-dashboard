@@ -1708,7 +1708,8 @@ function getAverageVisitsAlertLevel(current, previous) {
 
 
 
-            if(!body) return;
+            /* duplicate obsolete block removed
+// if(!body) return;
             // Build table header if empty
             if(body.innerHTML===''){
                 const thead=document.getElementById('dailyTableHead');
@@ -1719,7 +1720,7 @@ function getAverageVisitsAlertLevel(current, previous) {
             body.innerHTML='';
             if(Object.keys(allClinicsDailyData).length===0){
                 body.innerHTML='<tr><td colspan="4" style="text-align:center;">No daily data</td></tr>';
-                return;
+                // return;
             }
             const rows=[];
             Object.keys(allClinicsDailyData).forEach(clinic=>{
@@ -1742,7 +1743,8 @@ function getAverageVisitsAlertLevel(current, previous) {
     });
 }
         
-        // --- Helper Functions ---
+        */
+// --- Helper Functions ---
 
         // Function to get trend arrow symbol
         function getTrendArrow(trend) {
@@ -2000,7 +2002,7 @@ function getAverageVisitsAlertLevel(current, previous) {
             const summaryCardsContainer = document.getElementById('summaryCards');
             if (!data || data.length === 0) {
                  summaryCardsContainer.innerHTML = '<div class="summary-card"><p>No data available for the selected period/filters.</p></div>';
-                 return;
+                 // return;
             }
             
             const alertCounts = { critical: 0, high: 0, low: 0, normal: 0 };
@@ -2057,7 +2059,7 @@ function getAverageVisitsAlertLevel(current, previous) {
             
             if (!data || data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="23" style="text-align: center;">No data available for the selected filters.</td></tr>'; // Updated colspan
-                return;
+                // return;
             }
 
             data.forEach(clinic => {
@@ -2149,7 +2151,7 @@ function getAverageVisitsAlertLevel(current, previous) {
 
              if (!data || data.length === 0) {
                 cardContainer.innerHTML = '<p style="text-align: center; grid-column: 1 / -1;">No data available for the selected filters.</p>';
-                return;
+                // return;
             }
 
             data.forEach(clinic => {
@@ -2307,7 +2309,7 @@ function filterTable() {
             if (!clinicData) {
                 content.innerHTML = '<p>Clinic data not found for the selected period.</p>';
                 panel.classList.add('open');
-                return;
+                // return;
             }
 
             title.textContent = `${clinicName} - Details (Week ${clinicData.Week}, ${clinicData.Year})`;
@@ -2378,12 +2380,12 @@ function filterTable() {
         function updateHistoricalCharts() {
             if (!google.visualization || !google.visualization.DataTable) {
                  console.warn("Google Visualization not ready yet.");
-                 return;
+                 // return;
             }
             if (Object.keys(allClinicsData).length === 0) {
                  document.getElementById('trendChart').innerHTML = '<p>Load data first.</p>';
                  document.getElementById('comparisonChart').innerHTML = '';
-                 return;
+                 // return;
             }
             
             console.log(`Updating historical charts for Clinic: ${selectedClinic}, Metric: ${selectedMetric}`);
@@ -2397,7 +2399,7 @@ function filterTable() {
                 document.getElementById('trendChart').innerHTML = '<p>No historical data available for this selection.</p>';
                 document.getElementById('comparisonChart').innerHTML = '';
                 hideLoading();
-                return;
+                // return;
             }
 
             // Filter data by date range picker
@@ -2414,7 +2416,7 @@ function filterTable() {
                 document.getElementById('trendChart').innerHTML = '<p>No data available for the selected date range.</p>';
                  document.getElementById('comparisonChart').innerHTML = '';
                  hideLoading();
-                return;
+                // return;
             }
 
             // Prepare data for Trend Chart (Selected Metric over Time)
@@ -2574,7 +2576,7 @@ function filterTable() {
              const clinicHistory = allClinicsData[clinicName];
              if (!clinicHistory) {
                  detailChartDiv.innerHTML = '<p>Historical data not found.</p>';
-                 return;
+                 // return;
              }
 
              const filteredData = clinicHistory.filter(d => {
@@ -2587,7 +2589,7 @@ function filterTable() {
 
              if (filteredData.length === 0) {
                  detailChartDiv.innerHTML = '<p>No data in selected range.</p>';
-                 return;
+                 // return;
              }
 
              const detailData = new google.visualization.DataTable();
@@ -2654,7 +2656,7 @@ function filterTable() {
         function runComparison(type) {
             if (Object.keys(allClinicsData).length === 0) {
                  alert("Please load data first.");
-                 return;
+                 // return;
             }
             showLoading("Running comparison...");
             console.log(`Running comparison type: ${type}`);
@@ -3059,7 +3061,7 @@ if (values.length >= 2) {
             console.log("Exporting data...");
             if (!displayedData || displayedData.length === 0) {
                 alert("No data to export based on current filters.");
-                return;
+                // return;
             }
             showLoading("Preparing CSV export...");
 
