@@ -18,6 +18,7 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f5f5f5;
@@ -1684,9 +1685,11 @@ function getAverageVisitsAlertLevel(current, previous) {
                 let rowHtml=`<tr><td class="clinic-name">${clinic}</td>`;
                 dates.forEach(d=>{
                     const rec=allClinicsDailyData[clinic].find(r=>r.Date===d);
-                    const val=(rec&&rec[metricHeader]!==undefined&&rec[metricHeader]!==null)?rec[metricHeader]:'N/A';
-                    const display=(val==='N/A')?val:val+'%';
-                    rowHtml+=`<td>${display}</td>`;
+                    if(rec){
+                        rowHtml+= generateDailyMetricCell(rec, metricId);
+                    } else {
+                        rowHtml+='<td>N/A</td>';
+                    }
                 });
                 rowHtml+='</tr>';
                 tbody.innerHTML+=rowHtml;
