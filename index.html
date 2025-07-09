@@ -1672,7 +1672,11 @@ function getAverageVisitsAlertLevel(current, previous) {
             const targetVal = metricId==='targetVisits'
                 ? (bench['Target of Visits'] ?? bench['TargetVisits'])
                 : (bench['Google Reviews'] ?? bench['GoogleReviews']);
-            const displayValue = (value===null||value===undefined||value==='') ? 'N/A' : value + '%';
+            let displayVal = value;
+            if(typeof displayVal === 'string' && displayVal.trim().endsWith('%')){
+                displayVal = displayVal.trim().slice(0,-1);
+            }
+            const displayValue = (displayVal===null||displayVal===undefined||displayVal==='') ? 'N/A' : displayVal;
             let targetDisplay = targetVal;
             if(typeof targetDisplay === 'string' && targetDisplay.trim().endsWith('%')){
                 targetDisplay = targetDisplay.trim().slice(0,-1); // remove trailing % if present
