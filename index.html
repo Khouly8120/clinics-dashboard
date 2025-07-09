@@ -1597,38 +1597,31 @@ function getAverageVisitsAlertLevel(current, previous) {
             allClinicsDailyData = {};
             let maxDate = '';
             rows.forEach(r=>{
-                // Normalize date to ISO (YYYY-MM-DD) to allow reliable chronological sort/comparison
-                const isoDate = moment(r.Date, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY','DD/MM/YYYY','D/M/YYYY']).format('YYYY-MM-DD');
+                const isoDate = moment(r.Date, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY','DD/MM/YYYY','D/M/YYYY','MM-DD-YYYY','M-D-YYYY','DD-MM-YYYY','D-M-YYYY']).format('YYYY-MM-DD');
                 r.Date = isoDate;
-                // Convert metric values to numbers where possible
                 ['Target of Visits','Google Reviews','New Patients Target'].forEach(col=>{
-                    const val = parseFloat(r[col]);
-                    if(!isNaN(val)) r[col] = val;
+                    const val=parseFloat(r[col]); if(!isNaN(val)) r[col]=val;
                 });
-                const clinic = r.Clinic;
+                const clinic=r.Clinic;
                 if(!allClinicsDailyData[clinic]) allClinicsDailyData[clinic]=[];
                 allClinicsDailyData[clinic].push(r);
                 if(r.Date>maxDate) maxDate=r.Date;
             });
-            latestDailyDate = maxDate;
-            // keep only last 7 days per clinic
-            Object.keys(allClinicsDailyData).forEach(c=>{
-                allClinicsDailyData[c].sort((a,b)=>a.Date.localeCompare(b.Date));
-                allClinicsDailyData[c] = allClinicsDailyData[c].slice(-7);
-                // calculate alerts
-                allClinicsDailyData[c].forEach(row=>{
-                    ['Target of Visits','Google Reviews','New Patients Target'].forEach(col=>{                       let metricId;
-                       if(col==='Target of Visits') metricId='targetVisits';
-                       else if(col==='Google Reviews') metricId='googleReviews';
-                       else metricId='newPatients';
-                       const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic] || latestDailyBenchmarkByClinic[row.Clinic] || {};
-                       const higherFlag = bench[col+'_HigherIsBetter'];
-                       const higherIsBetter = (higherFlag===undefined||higherFlag===null)?true:(higherFlag.toString().toLowerCase()==='true');
-                       row[metricId+'Alert']=getAlertLevel(row[col], bench[col], higherIsBetter, metricId);
+            latestDailyDate=maxDate;
+            Object.values(allClinicsDailyData).forEach(arr=>arr.sort((a,b)=>a.Date.localeCompare(b.Date)));
+            Object.values(allClinicsDailyData).forEach(arr=>{
+                arr.forEach(row=>{
+                    ['Target of Visits','Google Reviews','New Patients Target'].forEach(col=>{
+                        const metricId = (col==='Target of Visits')?'targetVisits':(col==='Google Reviews')?'googleReviews':'newPatients';
+                        const bench=dailyBenchmarkData[row.Date+'|'+row.Clinic]||latestDailyBenchmarkByClinic[row.Clinic]||{};
+                        const higherFlag=bench[col+'_HigherIsBetter'];
+                        const higherIsBetter=(higherFlag===undefined||higherFlag===null)?true:(higherFlag.toString().toLowerCase()==='true');
+                        row[metricId+'Alert']=getAlertLevel(row[col], bench[col], higherIsBetter, metricId);
                     });
                 });
             });
         }
+
 
         async function fetchCsvText(url){
             const res = await fetch(url);
