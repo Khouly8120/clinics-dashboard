@@ -689,7 +689,7 @@
 
     <div class="tab-container">
         <div class="tab-buttons">
-            <button class="tab-button active" onclick="switchTab(event, 'currentData')">Current Data</button>
+            <button class="tab-button active" onclick="switchTab(event, 'currentData')">Weekly Updates</button>
             <button class="tab-button" onclick="switchTab(event, 'historicalTrends')">Historical Trends</button>
             <button class="tab-button" onclick="switchTab(event, 'comparisonTab')">Comparison</button>
             <button class="tab-button" onclick="switchTab(event, 'dailyTab')">Daily Numbers</button>
@@ -1713,21 +1713,28 @@ function getAverageVisitsAlertLevel(current, previous) {
             // header row
             let headerRow='<tr><th>Clinic / Date</th>';
             dates.forEach(d=>{headerRow+=`<th class="pivot-date">${moment(d).format('MMM D, YYYY')}</th>`;});
-            headerRow+='</tr>';
+            headerRow+='<th>Overall Alert</th></tr>';
             thead.innerHTML=headerRow;
             // clinics rows
             const clinics=Object.keys(allClinicsDailyData).sort((a,b)=>a.localeCompare(b));
             clinics.forEach(clinic=>{
                 let rowHtml=`<tr><td class="clinic-name">${clinic}</td>`;
+                let worstAlert='normal';
                 dates.forEach(d=>{
                     const rec=allClinicsDailyData[clinic].find(r=>r.Date===d);
                     if(rec){
                         rowHtml+= generateDailyMetricCell(rec, metricId);
+                        const alert=rec[metricId+'Alert']||'normal';
+                        if(['critical','high','low','normal'].indexOf(alert)>-1){
+                            if((alert==='critical')||(alert==='high'&&worstAlert!=='critical')||(alert==='low'&&worstAlert==='normal')){
+                                worstAlert=alert;
+                            }
+                        }
                     } else {
                         rowHtml+='<td>N/A</td>';
                     }
                 });
-                rowHtml+='</tr>';
+                rowHtml+=`<td><span class="alert-badge alert-${worstAlert}">${worstAlert.toUpperCase()}</span></td></tr>`;
                 tbody.innerHTML+=rowHtml;
             });
         }
