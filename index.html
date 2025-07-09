@@ -1707,8 +1707,9 @@ function getAverageVisitsAlertLevel(current, previous) {
             const rangeVal = document.getElementById('dateRangePickerDaily').value;
             let startDate,endDate;
             if(rangeVal && rangeVal.includes(' - ')){
-                const [s,e]=rangeVal.split(' - ');
-                startDate=s; endDate=e;
+                const [sRaw,eRaw]=rangeVal.split(' - ');
+                startDate=sRaw.trim();
+                endDate=eRaw.trim();
             }
             if(startDate && endDate){
                 dates = dates.filter(d=> d>=startDate && d<=endDate);
