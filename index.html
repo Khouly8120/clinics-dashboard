@@ -1657,6 +1657,15 @@ function getAverageVisitsAlertLevel(current, previous) {
             });
         }
         // Generate HTML for a daily metric cell similar to weekly view
+        function toNumeric(val){
+            if(typeof val==='number') return val;
+            if(typeof val==='string'){
+                const num=parseFloat(val.replace(/[^0-9.\-]/g,''));
+                return isNaN(num)? null:num;
+            }
+            return null;
+        }
+        
         function generateDailyMetricCell(row, metricId){
             const metricNameMap={ targetVisits:'Target Visits', googleReviews:'Google Reviews' };
             const value = (metricId==='targetVisits')? row['Target of Visits'] : row['Google Reviews'];
@@ -1727,9 +1736,11 @@ function getAverageVisitsAlertLevel(current, previous) {
                         dateCells+= generateDailyMetricCell(rec, metricId);
                         const benchRow = dailyBenchmarkData[rec.Date+'|'+rec.Clinic] || latestDailyBenchmarkByClinic[rec.Clinic] || {};
                         const benchVal = benchRow[metricHeader];
-                        if(typeof benchVal === 'number') {
-                            targetSum += benchVal;
-                            achievedSum += (typeof rec[metricHeader]==='number')? rec[metricHeader]:0;
+                        const benchNumeric = toNumeric(benchVal);
+                        const achievedNumeric = toNumeric(rec[metricHeader]);
+                        if(benchNumeric!==null && achievedNumeric!==null){
+                            targetSum += benchNumeric;
+                            achievedSum += achievedNumeric;
                         }
                         const hFlag = benchRow[metricHeader+'_HigherIsBetter'];
                         if(hFlag!==undefined&&hFlag!==null) higherIsBetter = (hFlag.toString().toLowerCase()==='true');
