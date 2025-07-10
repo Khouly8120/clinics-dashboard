@@ -1725,10 +1725,12 @@ function getAverageVisitsAlertLevel(current, previous) {
                     const rec=allClinicsDailyData[clinic].find(r=>r.Date===d);
                     if(rec){
                         dateCells+= generateDailyMetricCell(rec, metricId);
-                        achievedSum += (typeof rec[metricHeader]==='number')? rec[metricHeader]:0;
                         const benchRow = dailyBenchmarkData[rec.Date+'|'+rec.Clinic] || latestDailyBenchmarkByClinic[rec.Clinic] || {};
                         const benchVal = benchRow[metricHeader];
-                        if(typeof benchVal === 'number') targetSum += benchVal;
+                        if(typeof benchVal === 'number') {
+                            targetSum += benchVal;
+                            achievedSum += (typeof rec[metricHeader]==='number')? rec[metricHeader]:0;
+                        }
                         const hFlag = benchRow[metricHeader+'_HigherIsBetter'];
                         if(hFlag!==undefined&&hFlag!==null) higherIsBetter = (hFlag.toString().toLowerCase()==='true');
                     } else {
