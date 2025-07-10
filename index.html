@@ -1719,25 +1719,24 @@ function getAverageVisitsAlertLevel(current, previous) {
             const clinics=Object.keys(allClinicsDailyData).sort((a,b)=>a.localeCompare(b));
             clinics.forEach(clinic=>{
                 let rowHtml=`<tr><td class="clinic-name">${clinic}</td>`;
-                let criticalHighCount=0;
+                let achievedSum=0, targetSum=0, higherIsBetter=true;
                 dates.forEach(d=>{
                     const rec=allClinicsDailyData[clinic].find(r=>r.Date===d);
                     if(rec){
                         rowHtml+= generateDailyMetricCell(rec, metricId);
-                        const alert=rec[metricId+'Alert']||'normal';
-                        if(alert==='critical'||alert==='high') criticalHighCount++;
+                        achievedSum += (typeof rec[metricHeader]==='number')? rec[metricHeader]:0;
+                        const benchRow = dailyBenchmarkData[rec.Date+'|'+rec.Clinic] || latestDailyBenchmarkByClinic[rec.Clinic] || {};
+                        const benchVal = benchRow[metricHeader];
+                        if(typeof benchVal === 'number') targetSum += benchVal;
+                        const hFlag = benchRow[metricHeader+'_HigherIsBetter'];
+                        if(hFlag!==undefined&&hFlag!==null) higherIsBetter = (hFlag.toString().toLowerCase()==='true');
                     } else {
                         rowHtml+='<td>N/A</td>';
                     }
                 });
-                const totalDays=dates.length;
                 let overall='low';
-                if(totalDays>0){
-                    const pct=criticalHighCount/totalDays;
-                    if(pct>=0.8) overall='critical';
-                    else if(pct>=0.6) overall='high';
-                    else if(pct>=0.3) overall='normal';
-                    else overall='low';
+                if(targetSum>0){
+                    overall = getAlertLevel(achievedSum, targetSum, higherIsBetter, metricId);
                 }
                 rowHtml+=`<td><span class="alert-badge alert-${overall}">${overall.toUpperCase()}</span></td></tr>`;
                 tbody.innerHTML+=rowHtml;
