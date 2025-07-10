@@ -1711,19 +1711,20 @@ function getAverageVisitsAlertLevel(current, previous) {
                 dates = dates.slice(-7);
             }
             // header row
-            let headerRow='<tr><th>Clinic / Date</th>';
+            let headerRow='<tr><th>Clinic</th><th>Overall Alert</th>';
             dates.forEach(d=>{headerRow+=`<th class="pivot-date">${moment(d).format('MMM D, YYYY')}</th>`;});
-            headerRow+='<th>Overall Alert</th></tr>';
+            headerRow+='</tr>';
             thead.innerHTML=headerRow;
             // clinics rows
             const clinics=Object.keys(allClinicsDailyData).sort((a,b)=>a.localeCompare(b));
             clinics.forEach(clinic=>{
                 let rowHtml=`<tr><td class="clinic-name">${clinic}</td>`;
                 let achievedSum=0, targetSum=0, higherIsBetter=true;
+                let dateCells='';
                 dates.forEach(d=>{
                     const rec=allClinicsDailyData[clinic].find(r=>r.Date===d);
                     if(rec){
-                        rowHtml+= generateDailyMetricCell(rec, metricId);
+                        dateCells+= generateDailyMetricCell(rec, metricId);
                         achievedSum += (typeof rec[metricHeader]==='number')? rec[metricHeader]:0;
                         const benchRow = dailyBenchmarkData[rec.Date+'|'+rec.Clinic] || latestDailyBenchmarkByClinic[rec.Clinic] || {};
                         const benchVal = benchRow[metricHeader];
@@ -1731,14 +1732,14 @@ function getAverageVisitsAlertLevel(current, previous) {
                         const hFlag = benchRow[metricHeader+'_HigherIsBetter'];
                         if(hFlag!==undefined&&hFlag!==null) higherIsBetter = (hFlag.toString().toLowerCase()==='true');
                     } else {
-                        rowHtml+='<td>N/A</td>';
+                        dateCells+='<td>N/A</td>';
                     }
                 });
                 let overall='low';
                 if(targetSum>0){
                     overall = getAlertLevel(achievedSum, targetSum, higherIsBetter, metricId);
                 }
-                rowHtml+=`<td><span class="alert-badge alert-${overall}">${overall.toUpperCase()}</span></td></tr>`;
+                rowHtml+=`<td><span class=\"alert-badge alert-${overall}\">${overall.toUpperCase()}</span></td>`+dateCells+'</tr>';
                 tbody.innerHTML+=rowHtml;
             });
         }
