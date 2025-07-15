@@ -1065,6 +1065,9 @@
     
                     
                     console.log("Dashboard Initialized Successfully.");
+        // Enable view toggle buttons & comparison controls now that data loaded
+        document.querySelectorAll('.view-toggle button').forEach(b=>b.disabled=false);
+        document.querySelectorAll('#comparisonTab button, #comparisonTab select').forEach(el=>el.disabled=false);
                     // displayValidationMessages(); // Validation messages hidden on success
                     hideLoading();
     
@@ -2358,34 +2361,60 @@
     
 
             // --- Utility Function: Populate Card View ---
-            function populateCardView(data) {
-                const container = document.getElementById('cardView');
-                if (!container) return;
-                container.innerHTML = '';
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<p>No data available for selected filters.</p>';
-                    return;
-                }
-                data.forEach(clinic => {
-                    const card = document.createElement('div');
-                    card.className = 'clinic-card';
+function populateCardView(data) {
+    const container = document.getElementById('cardView');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p>No data available for selected filters.</p>';
+        return;
+    }
+    data.forEach(clinic => {
+        const card = document.createElement('div');
+        card.className = 'clinic-card';
+        const alertLevel = clinic.overallAlert || 'normal';
+        const trendText = clinic.weeklyTrend || 'N/A';
+        const notesAlert = clinic.areaManagerNotesAlertLevel || 'N/A';
+        card.innerHTML = `
+            <h2 class="status-text alert-${alertLevel}">${alertLevel.toUpperCase()}</h2>
+            <h3>${clinic.Clinic}</h3>
+            <div class="metric-line">Overall Status</div>
+            <div class="metric-line">Trend: ${trendText}</div>
+            <div class="metric-line">Notes Alert: ${notesAlert.toUpperCase()}</div>
+            <button class="action-button" onclick="showDetails('${clinic.Clinic}')">Details</button>`;
+        container.appendChild(card);
+    });
+}
 
-                    const alertLevel = clinic.overallAlert || 'normal';
-                    // Basic card layout – adjust as needed for more metrics
-                    card.innerHTML = `
-                        <h3>${clinic.Clinic}</h3>
-                        <div class="overall-alert"><span class="alert-badge alert-${alertLevel}">${alertLevel.toUpperCase()}</span></div>
-                        <ul class="metrics-list">
-                            <li>New Patients: ${clinic.NewPatients ?? 'N/A'}</li>
-                            <li>Visits Target: ${clinic.VisitsTarget ?? 'N/A'}</li>
-                            <li>Utilization: ${clinic.Utilization ?? 'N/A'}</li>
-                            <li>Retention (2nd): ${clinic.Retention2nd ?? 'N/A'}</li>
-                            <li>Cancel %: ${clinic.Cancel ?? 'N/A'}</li>
-                            <li>No Show %: ${clinic.NoShow ?? 'N/A'}</li>
-                        </ul>`;
-                    container.appendChild(card);
-                });
-            }
+    const arrow = getTrendArrow(trend);
+    let arrowSpan='';
+    if(arrow){
+        arrowSpan=`<span class="trend-arrow trend-${trend||'same'}">${arrow}</span>`;
+    }
+    // Determine target: prefer benchmarkData for entry's week, fallback to in-row target column
+    const benchKey = (typeof benchmarkData!=='undefined') ? `${entry.Year}-W${entry.Week}` : null;
+    let benchTarget;
+    if(benchKey && benchmarkData[benchKey]){
+        benchTarget = benchmarkData[benchKey][csvHeader];
+    }
+    const targetVal = (benchTarget!==undefined && benchTarget!==null && benchTarget!=='') ? benchTarget : target;
+
+    let targetText='Target: N/A';
+    if(targetVal!==undefined && targetVal!==null && targetVal!==''){
+        let tDisplay = targetVal;
+        if(metricMeta.type==='percentage'){
+            const n=parseFloat(targetVal);
+            tDisplay = isNaN(n)? targetVal : n.toFixed(1)+'%';
+        }
+        targetText = `Target: ${tDisplay}`;
+    }
+
+    return `<td class="metric-value">
+                <span class="alert-badge alert-${alertLevel}">${display}</span>
+                ${arrowSpan}
+                <div class="deviation">${targetText}</div>
+            </td>`;
+}
 
             // Toggle between Table and Card view
             function toggleView(view) {
@@ -3191,12 +3220,20 @@ function generateMetricCell(entry, metricId){
     if(arrow){
         arrowSpan=`<span class="trend-arrow trend-${trend||'same'}">${arrow}</span>`;
     }
+    // Determine target: prefer benchmarkData for entry's week, fallback to in-row target column
+    const benchKey = (typeof benchmarkData!=='undefined') ? `${entry.Year}-W${entry.Week}` : null;
+    let benchTarget;
+    if(benchKey && benchmarkData[benchKey]){
+        benchTarget = benchmarkData[benchKey][csvHeader];
+    }
+    const targetVal = (benchTarget!==undefined && benchTarget!==null && benchTarget!=='') ? benchTarget : target;
+
     let targetText='Target: N/A';
-    if(target!==undefined && target!==null && target!==''){
-        let tDisplay = target;
+    if(targetVal!==undefined && targetVal!==null && targetVal!==''){
+        let tDisplay = targetVal;
         if(metricMeta.type==='percentage'){
-            const n=parseFloat(target);
-            tDisplay = isNaN(n)? target : n.toFixed(1)+'%';
+            const n=parseFloat(targetVal);
+            tDisplay = isNaN(n)? targetVal : n.toFixed(1)+'%';
         }
         targetText = `Target: ${tDisplay}`;
     }
