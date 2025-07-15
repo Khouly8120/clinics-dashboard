@@ -3602,6 +3602,97 @@ function generateDailyMetricCell(row, metricId){
         });
     }
     
+    // URL of the Meeting Notes Google Sheet published as CSV
+    const googleSheetMeetingNotesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTBp1rqPNc_3K9d8WKg5ynUMUXxCPTM5LTNRB3FgqK8uYreZ63EVZC9C6RiEqKHiwpzqZ38bEoWIpWi/pub?gid=1033388301&single=true&output=csv';
+    
+    // Function to fetch meeting notes data from Google Sheet
+    async function fetchMeetingNotesData() {
+        console.log("Fetching meeting notes data from sheet:", googleSheetMeetingNotesUrl);
+        
+        try {
+            const response = await fetch(googleSheetMeetingNotesUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch meeting notes: ${response.status} ${response.statusText}`);
+            }
+            
+            const csvText = await response.text();
+            return parseMeetingNotesCSV(csvText);
+        } catch (error) {
+            console.error("Error fetching meeting notes data:", error);
+            throw error;
+        }
+    }
+    
+    // Function to parse meeting notes CSV data
+    function parseMeetingNotesCSV(csvText) {
+        console.log("Parsing meeting notes CSV data");
+        
+        // Split into lines and get headers
+        const lines = csvText.split('\n');
+        if (lines.length <= 1) {
+            console.error("No valid data in meeting notes CSV");
+            return [];
+        }
+        
+        const headers = lines[0].split(',').map(header => header.trim());
+        
+        // Check for required headers
+        const requiredHeaders = ['Date of meeting', 'Done', 'Clinic', 'Metric', 'Notes'];
+        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+        
+        if (missingHeaders.length > 0) {
+            console.error(`Missing required headers in meeting notes CSV: ${missingHeaders.join(', ')}`);
+            return [];
+        }
+        
+        // Parse data rows
+        const data = [];
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue; // Skip empty lines
+            
+            // Handle quoted fields with commas inside them
+            const row = parseCSVRow(lines[i]);
+            
+            if (row.length !== headers.length) {
+                console.warn(`Skipping row ${i+1}: incorrect number of fields`);
+                continue;
+            }
+            
+            const item = {};
+            headers.forEach((header, index) => {
+                item[header] = row[index];
+            });
+            
+            data.push(item);
+        }
+        
+        console.log(`Parsed ${data.length} meeting note items`);
+        return data;
+    }
+    
+    // Helper function to properly parse CSV rows with quoted fields
+    function parseCSVRow(row) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < row.length; i++) {
+            const char = row[i];
+            
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        result.push(current.trim());
+        return result;
+    }
+    
     async function initializeMeetingNotesTab() {
         console.log("Initializing Meeting Notes tab...");
         
