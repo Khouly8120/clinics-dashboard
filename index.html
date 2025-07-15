@@ -2155,7 +2155,7 @@
                     availableWeeks.forEach(week => {
                         const option = document.createElement('option');
                         option.value = `${week.year}-W${week.week}`;
-                        option.textContent = `W${week.week}, ${week.year}`;
+                        option.textContent = moment().year(week.year).isoWeek(week.week).startOf('isoWeek').format('MMM D, YYYY');
                         selector.appendChild(option);
                     });
                     // Set default selected week (e.g., last 4 weeks)
@@ -2526,7 +2526,7 @@ function populateCardView(data) {
                 });
     
                 detailsHTML += `</div>`;
-                detailsHTML += `<hr style="margin: 15px 0;"><h4>Historical Trend (${metricsDefinition.find(m=>m.id===selectedMetric)?.name || selectedMetric}):</h4>`;
+                detailsHTML += `<hr style=\"margin: 15px 0;\"><h4 id=\"detailTrendHeader\">Historical Trend (${metricsDefinition.find(m=>m.id===selectedMetric)?.name || selectedMetric}):</h4>`;
                 detailsHTML += `<div id="detailTrendChart" style="width: 100%; height: 250px;">Loading chart...</div>`;
     
                 content.innerHTML = detailsHTML;
@@ -2724,6 +2724,10 @@ function populateCardView(data) {
                      const clinicName = document.getElementById('detailsTitle').textContent.split(' - ')[0];
                      if (clinicName && clinicName !== 'Clinic Details') {
                          drawDetailTrendChart(clinicName);
+                         const metricDef = metricsDefinition.find(m=>m.id===metricId);
+                         const metricName = metricDef?.name || metricId;
+                         const headerEl = document.getElementById('detailTrendHeader');
+                         if(headerEl) headerEl.textContent = `Historical Trend (${metricName}):`;
                      }
                 }
             }
@@ -2779,7 +2783,7 @@ function populateCardView(data) {
                 });
     
                  const detailOptions = {
-                    // title: `${metricName} Trend`,
+                    title: `${metricName} Trend for ${clinicName}`,
                     legend: { position: 'none' },
                     hAxis: { textPosition: 'none' }, // Simpler axis for small chart
                     vAxis: { textPosition: 'none' },
@@ -2842,8 +2846,10 @@ function populateCardView(data) {
                             data1 = getWeekData(clinicName, week1Info.year, week1Info.week);
                             data2 = getWeekData(clinicName, week2Info.year, week2Info.week);
                             
-                            comparisonHTML += `<p>Comparing Week ${week1Info.week}, ${week1Info.year} vs Week ${week2Info.week}, ${week2Info.year} for ${clinicName === 'all' ? 'All Clinics (Avg)' : clinicName}</p>`;
-                            comparisonHTML += generateComparisonTable(data1, data2, `W${week1Info.week}`, `W${week2Info.week}`, clinicName === 'all');
+                            const date1Str = moment().year(week1Info.year).isoWeek(week1Info.week).startOf('isoWeek').format('MMM D, YYYY');
+                            const date2Str = moment().year(week2Info.year).isoWeek(week2Info.week).startOf('isoWeek').format('MMM D, YYYY');
+                            comparisonHTML += `<p>Comparing ${date1Str} vs ${date2Str} for ${clinicName === 'all' ? 'All Clinics (Avg)' : clinicName}</p>`;
+                            comparisonHTML += generateComparisonTable(data1, data2, date1Str, date2Str, clinicName === 'all');
                             break;
     
                         case '4-weeks':
@@ -2860,7 +2866,7 @@ function populateCardView(data) {
         return a.week - b.week;
     });
                             const weekData = weeksInfo.map(w => getWeekData(clinicName, w.year, w.week));
-                            const weekLabels = weeksInfo.map(w => `W${w.week}, ${w.year}`);
+                            const weekLabels = weeksInfo.map(w => moment().year(w.year).isoWeek(w.week).startOf('isoWeek').format('MMM D, YYYY'));
     
                             comparisonHTML += `<p>Comparing Weeks: ${weekLabels.join(', ')} for ${clinicName === 'all' ? 'All Clinics (Avg)' : clinicName}</p>`;
                             comparisonHTML += generateMultiComparisonTable(weekData, weekLabels, clinicName === 'all');
