@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Management Dashboard</title>
     <script>
-        const allowedEmails = ["operations.bi@ptofthecity.com", "khouly@ptofthecity.com"];
-        const email = prompt("Enter your email:");
-        if (!allowedEmails.includes(email)) {
+        const allowedEmails = ["operations.bi@ptofthecity.com", "khouly@ptofthecity.com"].map(e => e.toLowerCase());
+        const emailInput = prompt("Enter your email:");
+        const email = emailInput ? emailInput.trim().toLowerCase() : "";
+        if (!email || !allowedEmails.includes(email)) {
             alert("Access denied");
             window.location.href = "error.html";
         }
@@ -1537,9 +1538,9 @@
                         } else if (highCriticalCount >= 6) { // 6 or 7
                             entry.overallAlert = 'high';
                         } else if (highCriticalCount >= 3) { // 3, 4, or 5
-                            entry.overallAlert = 'low';
-                        } else { // 0, 1, or 2
                             entry.overallAlert = 'normal';
+                        } else { // 0, 1, or 2
+                            entry.overallAlert = 'low';
                         }
                         
                         // Determine weekly trend
@@ -1656,7 +1657,11 @@
                 if(df) df.disabled=false;
                 const exportBtn=document.querySelector('button[onclick="exportData()"]');
                 if(exportBtn) exportBtn.disabled=false;
+                // Explicitly enable the Historical Trends clinic dropdown
+                const clinicSel = document.getElementById('clinicSelector');
+                if (clinicSel) clinicSel.disabled = false;
             }
+            
             // --- Rendering for Daily Numbers ---
             // Initialize daterangepicker for Daily Numbers tab (called after libraries load)
             function initializeDailyRangePicker(){
@@ -1689,7 +1694,7 @@
             }
             
             function generateDailyMetricCell(row, metricId){
-                const metricNameMap={ targetVisits:'Target Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target', noUpcoming:'No Upcoming %', cancellation:'Cancellation %', noShow:'No Show %', utilization:'Utilization %', satisfactionCollect:'Satisfaction Collection %' };
+                const metricNameMap={ targetVisits:'Target of Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target', noUpcoming:'No Upcoming %', cancellation:'Cancellation %', noShow:'No Show %', utilization:'Utilization %', satisfactionCollect:'Satisfaction Collection %' };
                 const value = (metricId==='targetVisits')? row['Target of Visits'] :
                  (metricId==='googleReviews')? row['Google Reviews'] :
                  (metricId==='newPatients')? row['New Patients Target'] :
@@ -1876,8 +1881,7 @@
                 }
                 body.innerHTML='';
                 if(Object.keys(allClinicsDailyData).length===0){
-                    body.innerHTML='<tr><td colspan="4" style="text-align:center;">No daily data</td></tr>';
-                    // return;
+                    body.innerHTML='<tr><td colspan="4" style="text-align:center;">No daily data</td></tr>';return;
                 }
                 const rows=[];
                 Object.keys(allClinicsDailyData).forEach(clinic=>{
@@ -2261,76 +2265,12 @@
                 });
             }
             
-            // Helper to generate HTML for a metric table cell (Handles CSV header case)
-            function generateMetricCell(clinicData, metricId) {
-                const metricDef = metricsDefinition.find(m => m.id === metricId);
-                if (!metricDef) return '<td>Error</td>';
-    
-    
-                // Use correct CSV header case (e.g., NewPatients)
-                const csvHeader = metricDef.id.charAt(0).toUpperCase() + metricDef.id.slice(1);
-                const value = clinicData[csvHeader];
-                const alert = clinicData[metricDef.id + 'Alert'] || 'normal';
-                const trend = clinicData[metricId + 'Trend'] || 'same';
-                
-                // Get dynamic benchmark for display
-                const weekKey = `${clinicData.Year}-W${clinicData.Week}`;
-                const weeklyBenchmarks = benchmarkData[weekKey];
-                const target = weeklyBenchmarks ? weeklyBenchmarks[csvHeader] : null;
-                
-                let displayValue = 'N/A';
-                let targetText = '';
-    
-                if (value !== null && value !== undefined) {
-                    displayValue = metricDef.type === 'percentage' ? `${value}%` : value;
-                }
-                
-                if (target !== null && target !== undefined) {
-                     targetText = metricDef.type === 'percentage' ? `Target: ${target}%` : `Target: ${target}`;
-                } else {
-                     targetText = 'Target: N/A'; // Indicate if benchmark is missing
-                }
-    
-                return `
-                    <td class="metric-value">
-                        ${displayValue}
-                        <span class="alert-badge alert-${alert}">${alert.toUpperCase()}</span>
-                        <span class="trend-arrow trend-${trend}">${getTrendArrow(trend)}</span>
-                        <div class="deviation">${targetText}</div>
-                    </td>
-                `;
-            }
-    
-            // Populate card view
-            function populateCardView(data) {
-                const cardContainer = document.getElementById('cardView');
-                if (!cardContainer) return;
-                cardContainer.innerHTML = '';
-    
-                 if (!data || data.length === 0) {
-                    cardContainer.innerHTML = '<p style="text-align: center; grid-column: 1 / -1;">No data available for the selected filters.</p>';
-                    // return;
-                }
-    
-                data.forEach(clinic => {
-                    const notesAlert = clinic['areaManagerNotesAlertLevel'] || 'normal';
-                    card = document.createElement('div');
-                    card.className = 'summary-card'; // Reuse summary card style
-                    card.innerHTML = `
-                        <h3 class="clinic-name">${clinic.Clinic}</h3>
-                        <div class="number ${clinic.overallAlert}">${clinic.overallAlert.toUpperCase()}</div>
-                        <div>Overall Status</div>
-                        <p style="font-size: 0.8em; margin-top: 10px;">Trend: ${clinic.weeklyTrend || 'N/A'}</p>
-                        <p style="font-size: 0.8em; margin-top: 5px;">Notes Alert: <span class="alert-badge alert-${notesAlert}">${notesAlert.toUpperCase()}</span></p>
-                         <button class="action-button" style="margin-top: 15px;" onclick="showDetails('${clinic.Clinic}')">Details</button>
-                    `;
-                    cardContainer.appendChild(card);
-                });
-            }
-            
             // Enable controls after data load
             function enableControls() {
                 document.querySelectorAll('.controls select, .controls input, .controls button, .view-toggle button, .tab-buttons button, .comparison-controls select, .comparison-controls input, .comparison-controls button, #dateRangePicker, #compareRangePicker1, #compareRangePicker2').forEach(el => el.disabled = false);
+                // Explicitly enable the Historical Trends clinic dropdown
+                const clinicSel = document.getElementById('clinicSelector');
+                if (clinicSel) clinicSel.disabled = false;
             }
             
             // Disable controls on error or before data load
