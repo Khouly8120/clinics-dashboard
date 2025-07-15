@@ -1742,9 +1742,19 @@
                     targetDisplay = targetDisplay.trim().slice(0,-1); // remove trailing % if present
                 }
                 const targetText = (targetDisplay===null||targetDisplay===undefined||targetDisplay==='') ? 'Target: N/A' : `Target: ${targetDisplay}`;
-                return `<td class="metric-value">${displayValue}
-                        <span class="alert-badge alert-${alert}">${alert.toUpperCase()}</span>
-                        <div class="deviation">${targetText}</div></td>`;
+                // Get trend indicator for the metric (if available)
+    const trend = row[metricId + 'Trend'] || '';
+    const arrow = getTrendArrow(trend);
+    let arrowSpan = '';
+    if (arrow) {
+        arrowSpan = `<span class="trend-arrow trend-${trend||'same'}">${arrow}</span>`;
+    }
+    
+    return `<td class="metric-value">
+            <span class="alert-badge alert-${alert}">${displayValue}</span>
+            ${arrowSpan}
+            <div class="deviation">${targetText}</div>
+        </td>`;
             }
     
             function renderDailyPivot(){
