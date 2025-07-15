@@ -2356,6 +2356,37 @@
                  filterTable(); // Re-apply filters for the new time period
             }
     
+
+            // --- Utility Function: Populate Card View ---
+            function populateCardView(data) {
+                const container = document.getElementById('cardView');
+                if (!container) return;
+                container.innerHTML = '';
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p>No data available for selected filters.</p>';
+                    return;
+                }
+                data.forEach(clinic => {
+                    const card = document.createElement('div');
+                    card.className = 'clinic-card';
+
+                    const alertLevel = clinic.overallAlert || 'normal';
+                    // Basic card layout – adjust as needed for more metrics
+                    card.innerHTML = `
+                        <h3>${clinic.Clinic}</h3>
+                        <div class="overall-alert"><span class="alert-badge alert-${alertLevel}">${alertLevel.toUpperCase()}</span></div>
+                        <ul class="metrics-list">
+                            <li>New Patients: ${clinic.NewPatients ?? 'N/A'}</li>
+                            <li>Visits Target: ${clinic.VisitsTarget ?? 'N/A'}</li>
+                            <li>Utilization: ${clinic.Utilization ?? 'N/A'}</li>
+                            <li>Retention (2nd): ${clinic.Retention2nd ?? 'N/A'}</li>
+                            <li>Cancel %: ${clinic.Cancel ?? 'N/A'}</li>
+                            <li>No Show %: ${clinic.NoShow ?? 'N/A'}</li>
+                        </ul>`;
+                    container.appendChild(card);
+                });
+            }
+
             // Toggle between Table and Card view
             function toggleView(view) {
                 currentView = view;
