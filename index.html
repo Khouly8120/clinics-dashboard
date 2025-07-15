@@ -3168,11 +3168,15 @@
             }
     
             // --- Utility Functions ---
-// Generate HTML for a metric cell with alert badge
+// Generate HTML for a metric cell with alert badge, trend arrow, and target deviation.
 function generateMetricCell(entry, metricId){
     const csvHeader = metricId.charAt(0).toUpperCase()+metricId.slice(1);
-    const rawVal = entry[csvHeader];
+    const rawVal   = entry[csvHeader];
+    const target   = entry[csvHeader+'Target']; // may be pre-computed in dataset
+    const trend    = entry[metricId+'Trend'];   // expected values: 'up','down','same'
+    const alertLevel = entry[metricId+'Alert']||'normal';
     const metricMeta = metricsDefinition.find(m=>m.id===metricId) || {type:'number'};
+
     let display = 'N/A';
     if(rawVal!==null && rawVal!==undefined && rawVal!==''){
         if(metricMeta.type==='percentage'){
@@ -3182,8 +3186,26 @@ function generateMetricCell(entry, metricId){
             display = rawVal;
         }
     }
-    const alertLevel = entry[metricId+'Alert']||'normal';
-    return `<td class="metric-value"><span class="alert-badge alert-${alertLevel}">${display}</span></td>`;
+    const arrow = getTrendArrow(trend);
+    let arrowSpan='';
+    if(arrow){
+        arrowSpan=`<span class="trend-arrow trend-${trend||'same'}">${arrow}</span>`;
+    }
+    let targetText='Target: N/A';
+    if(target!==undefined && target!==null && target!==''){
+        let tDisplay = target;
+        if(metricMeta.type==='percentage'){
+            const n=parseFloat(target);
+            tDisplay = isNaN(n)? target : n.toFixed(1)+'%';
+        }
+        targetText = `Target: ${tDisplay}`;
+    }
+
+    return `<td class="metric-value">
+                <span class="alert-badge alert-${alertLevel}">${display}</span>
+                ${arrowSpan}
+                <div class="deviation">${targetText}</div>
+            </td>`;
 }
 
 // Generate cell for daily pivot table (if needed)
