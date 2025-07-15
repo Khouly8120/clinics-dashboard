@@ -1746,20 +1746,6 @@
     const trend = row[metricId + 'Trend'] || '';
     const arrow = getTrendArrow(trend);
     let arrowSpan = '';
-    if (arrow) {
-        arrowSpan = `<span class="trend-arrow trend-${trend||'same'}">${arrow}</span>`;
-    }
-    
-    return `<td class="metric-value">
-            <span class="alert-badge alert-${alert}">${displayValue}</span>
-            ${arrowSpan}
-            <div class="deviation">${targetText}</div>
-        </td>`;
-            }
-    
-            function renderDailyPivot(){
-                const metricId = document.getElementById('dailyMetricSelector').value || 'targetVisits';
-                const metricToColumn = { targetVisits:'Target of Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target', noUpcoming:'No Upcoming %', cancellation:'Cancellation %', noShow:'No Show %', utilization:'Utilization %', satisfactionCollect:'Satisfaction Collection %' };
                 const metricHeader = metricToColumn[metricId];
                 const tbody=document.getElementById('dailyTableBody');
                 const thead=document.getElementById('dailyTableHead');
@@ -2421,8 +2407,8 @@ function populateCardView(data) {
     }
 
     return `<td class="metric-value">
-                <span class="alert-badge alert-${alertLevel}">${display}</span>
-                ${arrowSpan}
+                <div>${display} ${arrowSpan}</div>
+                <span class="alert-badge alert-${alertLevel}">${alertLevel.toUpperCase()}</span>
                 <div class="deviation">${targetText}</div>
             </td>`;
 */
@@ -3256,8 +3242,8 @@ function generateMetricCell(entry, metricId){
     }
 
     return `<td class="metric-value">
-                <span class="alert-badge alert-${alertLevel}">${display}</span>
-                ${arrowSpan}
+                <div>${display} ${arrowSpan}</div>
+                <span class="alert-badge alert-${alertLevel}">${alertLevel.toUpperCase()}</span>
                 <div class="deviation">${targetText}</div>
             </td>`;
 }
