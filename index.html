@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Management Dashboard</title>
     <script>
-        const allowedEmails = ["khouly@ptofthecity.com", "operations.bi@ptofthecity.com"];
+        const allowedEmails = ["example1@domain.com", "example2@domain.com"];
         const email = prompt("Enter your email:");
         if (!allowedEmails.includes(email)) {
             alert("Access denied");
@@ -867,6 +867,11 @@
                         <option value="targetVisits">Target Visits</option>
                         <option value="googleReviews">Google Reviews</option>
                         <option value="newPatients">New Patients Target</option>
+                        <option value="noUpcoming">No Upcoming %</option>
+                        <option value="cancellation">Cancellation %</option>
+                        <option value="noShow">No Show %</option>
+                        <option value="utilization">Utilization %</option>
+                        <option value="satisfactionCollect">Satisfaction Collection %</option>
                     </select>
                 </div>
                 <div class="responsive-table" style="overflow:auto;max-height:500px;">
@@ -1589,8 +1594,8 @@
                         fetchCsvText(googleSheetDailyDataUrl),
                         fetchCsvText(googleSheetDailyBenchmarkUrl)
                     ]);
-                    const dailyParsed = parseCsv(dailyText, ['Date','Clinic','Target of Visits','Google Reviews','New Patients Target']);
-                    const dailyBenchmarkParsed = parseCsv(dailyBenchmarkText, ['Date','Clinic','Target of Visits','Target of Visits_HigherIsBetter','Google Reviews','Google Reviews_HigherIsBetter','New Patients Target','New Patients Target_HigherIsBetter']);
+                    const dailyParsed = parseCsv(dailyText, ['Date','Clinic','Target of Visits','Google Reviews','New Patients Target','No Upcoming %','Cancellation %','No Show %','Utilization %','Satisfaction Collection %']);
+                    const dailyBenchmarkParsed = parseCsv(dailyBenchmarkText, ['Date','Clinic','Target of Visits','Target of Visits_HigherIsBetter','Google Reviews','Google Reviews_HigherIsBetter','New Patients Target','New Patients Target_HigherIsBetter','No Upcoming %','No Upcoming %_HigherIsBetter','Cancellation %','Cancellation %_HigherIsBetter','No Show %','No Show %_HigherIsBetter','Utilization %','Utilization %_HigherIsBetter','Satisfaction Collection %','Satisfaction Collection %_HigherIsBetter']);
                     dailyBenchmarkParsed.forEach(r=>{
                         // store exact date+clinic benchmark
                         dailyBenchmarkData[r.Date+'|'+r.Clinic] = r;
@@ -1629,7 +1634,7 @@
                 Object.values(allClinicsDailyData).forEach(arr=>{
                     arr.forEach(row=>{
                         ['Target of Visits','Google Reviews','New Patients Target'].forEach(col=>{
-                            const metricId = (col==='Target of Visits')?'targetVisits':(col==='Google Reviews')?'googleReviews':'newPatients';
+                            const metricId = (col==='Target of Visits')?'targetVisits':(col==='Google Reviews')?'googleReviews':(col==='New Patients Target')?'newPatients':(col==='No Upcoming %')?'noUpcoming':(col==='Cancellation %')?'cancellation':(col==='No Show %')?'noShow':(col==='Utilization %')?'utilization':'satisfactionCollect';
                             const bench=dailyBenchmarkData[row.Date+'|'+row.Clinic]||latestDailyBenchmarkByClinic[row.Clinic]||{};
                             const higherFlag=bench[col+'_HigherIsBetter'];
                             const higherIsBetter=(higherFlag===undefined||higherFlag===null)?true:(higherFlag.toString().toLowerCase()==='true');
@@ -1684,13 +1689,36 @@
             }
             
             function generateDailyMetricCell(row, metricId){
-                const metricNameMap={ targetVisits:'Target Visits', googleReviews:'Google Reviews' };
-                const value = (metricId==='targetVisits')? row['Target of Visits'] : row['Google Reviews'];
+                const metricNameMap={ targetVisits:'Target Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target', noUpcoming:'No Upcoming %', cancellation:'Cancellation %', noShow:'No Show %', utilization:'Utilization %', satisfactionCollect:'Satisfaction Collection %' };
+                const value = (metricId==='targetVisits')? row['Target of Visits'] :
+                 (metricId==='googleReviews')? row['Google Reviews'] :
+                 (metricId==='newPatients')? row['New Patients Target'] :
+                 (metricId==='noUpcoming')? row['No Upcoming %'] :
+                 (metricId==='cancellation')? row['Cancellation %'] :
+                 (metricId==='noShow')? row['No Show %'] :
+                 (metricId==='utilization')? row['Utilization %'] :
+                 (metricId==='satisfactionCollect')? row['Satisfaction Collection %'] :
+                 (metricId==='patientWaitTime')? row['Patient Wait Time'] :
+                 (metricId==='staffProductivity')? row['Staff Productivity'] :
+                 (metricId==='patientSatisfaction')? row['Patient Satisfaction'] :
+                 row['Revenue Growth'];
                 const alert = row[metricId+'Alert']||'normal';
                 const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic] || latestDailyBenchmarkByClinic[row.Clinic] || {};
-                const targetVal = metricId==='targetVisits'
-                    ? (bench['Target of Visits'] ?? bench['TargetVisits'])
-                    : (bench['Google Reviews'] ?? bench['GoogleReviews']);
+                let targetVal;
+    switch(metricId){
+        case 'targetVisits': targetVal = bench['Target of Visits'] ?? bench['TargetVisits']; break;
+        case 'googleReviews': targetVal = bench['Google Reviews'] ?? bench['GoogleReviews']; break;
+        case 'newPatients': targetVal = bench['New Patients Target']; break;
+        case 'noUpcoming': targetVal = bench['No Upcoming %']; break;
+        case 'cancellation': targetVal = bench['Cancellation %']; break;
+        case 'noShow': targetVal = bench['No Show %']; break;
+        case 'utilization': targetVal = bench['Utilization %']; break;
+        case 'satisfactionCollect': targetVal = bench['Satisfaction Collection %']; break;
+        case 'patientWaitTime': targetVal = bench['Patient Wait Time']; break;
+        case 'staffProductivity': targetVal = bench['Staff Productivity']; break;
+        case 'patientSatisfaction': targetVal = bench['Patient Satisfaction']; break;
+        case 'revenueGrowth': targetVal = bench['Revenue Growth']; break;
+    }
                 let displayVal = value;
                 if(typeof displayVal === 'string' && displayVal.trim().endsWith('%')){
                     displayVal = displayVal.trim().slice(0,-1);
@@ -1708,7 +1736,7 @@
     
             function renderDailyPivot(){
                 const metricId = document.getElementById('dailyMetricSelector').value || 'targetVisits';
-                const metricToColumn = { targetVisits:'Target of Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target' };
+                const metricToColumn = { targetVisits:'Target of Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target', noUpcoming:'No Upcoming %', cancellation:'Cancellation %', noShow:'No Show %', utilization:'Utilization %', satisfactionCollect:'Satisfaction Collection %' };
                 const metricHeader = metricToColumn[metricId];
                 const tbody=document.getElementById('dailyTableBody');
                 const thead=document.getElementById('dailyTableHead');
