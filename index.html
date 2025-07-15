@@ -2371,7 +2371,7 @@ function populateCardView(data) {
     }
     data.forEach(clinic => {
         const card = document.createElement('div');
-        card.className = 'clinic-card';
+        card.className = 'summary-card clinic-card';
         const alertLevel = clinic.overallAlert || 'normal';
         const trendText = clinic.weeklyTrend || 'N/A';
         const notesAlert = clinic.areaManagerNotesAlertLevel || 'N/A';
