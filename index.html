@@ -3137,6 +3137,33 @@
             }
     
             // --- Utility Functions ---
+// Generate HTML for a metric cell with alert badge
+function generateMetricCell(entry, metricId){
+    const csvHeader = metricId.charAt(0).toUpperCase()+metricId.slice(1);
+    const rawVal = entry[csvHeader];
+    const metricMeta = metricsDefinition.find(m=>m.id===metricId) || {type:'number'};
+    let display = 'N/A';
+    if(rawVal!==null && rawVal!==undefined && rawVal!==''){
+        if(metricMeta.type==='percentage'){
+            const num=parseFloat(rawVal);
+            display = isNaN(num)? rawVal : num.toFixed(1)+'%';
+        } else {
+            display = rawVal;
+        }
+    }
+    const alertLevel = entry[metricId+'Alert']||'normal';
+    return `<td class="metric-value"><span class="alert-badge alert-${alertLevel}">${display}</span></td>`;
+}
+
+// Generate cell for daily pivot table (if needed)
+function generateDailyMetricCell(row, metricId){
+    const metricMap = { targetVisits:'Target of Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target', noUpcoming:'No Upcoming %', cancellation:'Cancellation %', noShow:'No Show %', utilization:'Utilization %', satisfactionCollect:'Satisfaction Collection %' };
+    const header = metricMap[metricId] || metricId;
+    const val = row[header];
+    const display = (val===null||val===undefined||val==='') ? 'N/A' : val;
+    const alert = row[metricId+'Alert']||'normal';
+    return `<td class="metric-value"><span class="alert-badge alert-${alert}">${display}</span></td>`;
+}
     
             // Show loading overlay
             function showLoading(message = "Loading...") {
