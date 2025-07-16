@@ -985,6 +985,48 @@
     
             // --- Core Functions ---
     
+            // Initialize date pickers for the dashboard
+            function initializeDatePickers() {
+                console.log("Initializing date pickers");
+                // Initialize date range picker in historical trends tab
+                $('#dateRangePicker').daterangepicker({
+                    startDate: dateRange.start,
+                    endDate: dateRange.end,
+                    opens: 'left',
+                    locale: {
+                        format: 'MM/DD/YYYY'
+                    }
+                }, function(start, end) {
+                    dateRange.start = start;
+                    dateRange.end = end;
+                    updateHistoricalCharts();
+                });
+                
+                // Enable date picker controls after initialization
+                $('#dateRangePicker').prop('disabled', false);
+            }
+            
+            // Initialize daily date range picker
+            function initializeDailyRangePicker() {
+                console.log("Initializing daily date range picker");
+                // Get start date (1 month ago) and end date (today)
+                const startDate = moment().subtract(1, 'month');
+                const endDate = moment();
+                
+                // Initialize daily date range picker
+                $('#dateRangePickerDaily').daterangepicker({
+                    startDate: startDate,
+                    endDate: endDate,
+                    opens: 'left',
+                    locale: {
+                        format: 'MM/DD/YYYY'
+                    }
+                });
+                
+                // Enable daily date picker after initialization
+                $('#dateRangePickerDaily').prop('disabled', false);
+            }
+            
             // Initial setup function called after Google Charts loads
             async function setupDashboard() {
                 console.log("Dashboard setup initiated.");
