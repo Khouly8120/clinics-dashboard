@@ -2178,9 +2178,9 @@
                 renderDailyPivot();
             }
     
-    
-    
+            function legacyRenderDailyTable() {
                 if(!body) return;
+            }
                 // Build table header if empty
                 if(body.innerHTML===''){
                     const thead=document.getElementById('dailyTableHead');
