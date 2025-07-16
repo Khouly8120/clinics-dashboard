@@ -2080,6 +2080,127 @@
                     });
                 });
             }
+    // Function to render daily pivot data
+    function renderDailyPivot() {
+        const container = document.getElementById('dailyMetricsContainer');
+        if (!container) return;
+        
+        // Get selected date range
+        const dateRangeInput = document.getElementById('dateRangePickerDaily').value;
+        if (!dateRangeInput) {
+            container.innerHTML = '<p>Please select a date range.</p>';
+            return;
+        }
+        
+        // Get selected metric
+        const metricSelector = document.getElementById('dailyMetricSelector');
+        const selectedMetric = metricSelector ? metricSelector.value : 'utilization';
+        
+        // Parse date range
+        const [startStr, endStr] = dateRangeInput.split(' - ');
+        const startDate = moment(startStr, 'MM/DD/YYYY').format('YYYY-MM-DD');
+        const endDate = moment(endStr, 'MM/DD/YYYY').format('YYYY-MM-DD');
+        
+        // Check if we have data
+        if (!allClinicsDailyData || Object.keys(allClinicsDailyData).length === 0) {
+            container.innerHTML = '<p>No daily data available.</p>';
+            return;
+        }
+        
+        // Prepare data for pivot display
+        const pivotData = [];
+        const uniqueDates = new Set();
+        const uniqueClinics = new Set();
+        
+        // Process data
+        Object.entries(allClinicsDailyData).forEach(([clinic, clinicData]) => {
+            uniqueClinics.add(clinic);
+            
+            clinicData.forEach(row => {
+                if (row.Date >= startDate && row.Date <= endDate) {
+                    uniqueDates.add(row.Date);
+                    
+                    // Determine which metric to use based on selection
+                    let metricValue;
+                    let metricAlert = '';
+                    
+                    switch(selectedMetric) {
+                        case 'utilization':
+                            metricValue = row['Utilization %'];
+                            metricAlert = row['utilization_percentAlert'] || '';
+                            break;
+                        case 'googleReviews':
+                            metricValue = row['Google Reviews'];
+                            metricAlert = row['google_reviewsAlert'] || '';
+                            break;
+                        case 'noShow':
+                            metricValue = row['No Show %'];
+                            metricAlert = row['no_show_percentAlert'] || '';
+                            break;
+                        case 'cancellation':
+                            metricValue = row['Cancellation %'];
+                            metricAlert = row['cancellation_percentAlert'] || '';
+                            break;
+                        case 'noUpcoming':
+                            metricValue = row['No Upcoming %'];
+                            metricAlert = row['no_upcoming_percentAlert'] || '';
+                            break;
+                        case 'satisfactionCollection':
+                            metricValue = row['Satisfaction Collection %'];
+                            metricAlert = row['satisfaction_collection_percentAlert'] || '';
+                            break;
+                        default:
+                            metricValue = row['Utilization %'];
+                            metricAlert = row['utilization_percentAlert'] || '';
+                    }
+                    
+                    pivotData.push({
+                        date: row.Date,
+                        clinic,
+                        value: metricValue,
+                        alert: metricAlert
+                    });
+                }
+            });
+        });
+        
+        // Sort dates
+        const sortedDates = Array.from(uniqueDates).sort();
+        const sortedClinics = Array.from(uniqueClinics).sort();
+        
+        // Generate HTML table
+        let html = '<div class="responsive-table"><table class="pivot-table">';
+        
+        // Header row with dates
+        html += '<thead><tr><th>Clinic</th>';
+        sortedDates.forEach(date => {
+            const formattedDate = moment(date).format('MM/DD');
+            html += `<th>${formattedDate}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        
+        // Data rows
+        sortedClinics.forEach(clinic => {
+            html += `<tr><td>${clinic}</td>`;
+            
+            sortedDates.forEach(date => {
+                const entry = pivotData.find(item => item.clinic === clinic && item.date === date);
+                
+                if (entry) {
+                    const alertClass = entry.alert ? ` class="alert-${entry.alert}"` : '';
+                    html += `<td${alertClass}>${entry.value}</td>`;
+                } else {
+                    html += '<td>-</td>';
+                }
+            });
+            
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+    
     // --- end of updated renderDailyPivot ---
     */
             // Compatibility wrapper for legacy calls
