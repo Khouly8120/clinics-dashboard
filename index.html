@@ -711,6 +711,7 @@
                 <button class="tab-button" onclick="switchTab(event, 'historicalTrends')">Historical Trends</button>
                 <button class="tab-button" onclick="switchTab(event, 'comparisonTab')">Comparison</button>
                 <button class="tab-button" onclick="switchTab(event, 'dailyTab')">Daily Numbers</button>
+                <button class="tab-button" onclick="switchTab(event, 'meetingNotesTab')">Meeting Notes</button>
             </div>
             
             <div class="tab-content active" id="currentData">
@@ -880,6 +881,46 @@
                         <tbody id="dailyTableBody"><tr><td style="text-align:center;">Loading...</td></tr></tbody></table>
                 </div>
             </div>
+            
+            <div class="tab-content" id="meetingNotesTab">
+                <div class="table-header">Meeting Notes
+                    <div class="meeting-notes-filters" style="display:flex;align-items:center;margin-left:15px;">
+                        <div style="margin-right:15px;">
+                            <label for="meetingDateFilter" style="font-weight:bold;">Date Filter:</label>
+                            <input type="date" id="meetingDateFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
+                        </div>
+                        <div style="margin-right:15px;">
+                            <label for="meetingClinicFilter" style="font-weight:bold;">Clinic Filter:</label>
+                            <select id="meetingClinicFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
+                                <option value="all">All Clinics</option>
+                            </select>
+                        </div>
+                        <div style="margin-right:15px;">
+                            <label for="meetingMetricFilter" style="font-weight:bold;">Metric Filter:</label>
+                            <select id="meetingMetricFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
+                                <option value="all">All Metrics</option>
+                                <option value="Target of Visits">Target of Visits</option>
+                                <option value="New Patients To">New Patients</option>
+                                <option value="Cancellation %">Cancellation %</option>
+                                <option value="No Show %">No Show %</option>
+                                <option value="Google Reviews Only">Google Reviews</option>
+                                <option value="Satisfaction Collect">Satisfaction</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="meetingDoneFilter" style="font-weight:bold;">Status Filter:</label>
+                            <select id="meetingDoneFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
+                                <option value="all">All Status</option>
+                                <option value="done">Done</option>
+                                <option value="notDone">Not Done</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div id="meetingNotesContainer" class="meeting-notes-container" style="padding:20px;">
+                    <div id="loadingMeetingNotes" style="text-align:center;">Loading meeting notes...</div>
+                </div>
+            </div>
         </div>
     
         <div class="details-panel" id="detailsPanel">
@@ -911,12 +952,21 @@
             // DAILY metrics (Target Visits & Google Reviews)
             const googleSheetDailyDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1535490642&single=true&output=csv';
             const googleSheetDailyBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1352823327&single=true&output=csv';
+            // Meeting Notes Google Sheet URL
+            const googleSheetMeetingNotesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1857583669&single=true&output=csv';
     
             // --- Global variables for Daily Metrics ---
             let allClinicsDailyData = {};
             let dailyBenchmarkData = {};
     let latestDailyBenchmarkByClinic = {}; // fallback map
-            let latestDailyDate = ''; 
+            let latestDailyDate = '';
+            
+            // --- Global variables for Meeting Notes ---
+            let allMeetingNotesData = [];
+            let filteredMeetingNotesData = [];
+            
+            // --- Global variables for Historical Charts ---
+            let selectedMetric = 'targetVisits'; // Default selected metric 
     
             // --- Data Definitions ---
             // Note: AreaManagerNotes removed, AreaManagerNotesAlert kept (no benchmark)
@@ -973,7 +1023,7 @@
             let latestWeek = { year: 0, week: 0 };
             let previousWeek = { year: 0, week: 0 };
             let currentView = 'table';
-            let selectedMetric = 'newPatients'; // Default metric for historical charts
+            // selectedMetric already declared above
             let selectedClinic = 'all'; // Default clinic for historical charts
             let trendChart;
             let comparisonChart;
@@ -1027,6 +1077,163 @@
                 $('#dateRangePickerDaily').prop('disabled', false);
             }
             
+            // Load Meeting Notes data from Google Sheets
+            async function loadMeetingNotesData() {
+                console.log("Loading meeting notes data...");
+                try {
+                    const csvText = await fetchDataFromSheet(googleSheetMeetingNotesUrl, 'Meeting Notes');
+                    const parsedData = parseMeetingNotesCSV(csvText);
+                    allMeetingNotesData = parsedData;
+                    filteredMeetingNotesData = parsedData;
+                    populateMeetingNotesFilters();
+                    renderMeetingNotes();
+                    console.log(`Loaded ${allMeetingNotesData.length} meeting notes entries.`);
+                } catch (error) {
+                    console.error("Error loading meeting notes:", error);
+                    document.getElementById('loadingMeetingNotes').innerHTML = `<p style="color:red;">Error loading meeting notes: ${error.message}</p>`;
+                }
+            }
+            
+            // Parse Meeting Notes CSV data
+            function parseMeetingNotesCSV(csvText) {
+                const lines = csvText.trim().split(/\r?\n/);
+                if (lines.length < 2) return [];
+                
+                const headers = lines[0].split(',').map(h => h.trim());
+                const data = [];
+                
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    const values = parseCsvRow(lines[i]);
+                    if (values.length !== headers.length) continue;
+                    
+                    const entry = {};
+                    headers.forEach((header, index) => {
+                        entry[header] = values[index];
+                    });
+                    data.push(entry);
+                }
+                return data;
+            }
+            
+            // Populate meeting notes filter dropdowns
+            function populateMeetingNotesFilters() {
+                const clinicFilter = document.getElementById('meetingClinicFilter');
+                const clinics = [...new Set(allMeetingNotesData.map(item => item.Clinic || item.clinic).filter(Boolean))];
+                
+                clinicFilter.innerHTML = '<option value="all">All Clinics</option>';
+                clinics.forEach(clinic => {
+                    clinicFilter.innerHTML += `<option value="${clinic}">${clinic}</option>`;
+                });
+            }
+            
+            // Render meeting notes data
+            function renderMeetingNotes() {
+                const container = document.getElementById('meetingNotesContainer');
+                if (!filteredMeetingNotesData || filteredMeetingNotesData.length === 0) {
+                    container.innerHTML = '<p style="text-align:center;">No meeting notes data available.</p>';
+                    return;
+                }
+                
+                let html = '<div class="meeting-notes-list">';
+                filteredMeetingNotesData.forEach(note => {
+                    const status = note.Done === 'TRUE' || note.Done === 'true' ? 'done' : 'not-done';
+                    const statusText = status === 'done' ? 'Done' : 'Not Done';
+                    const statusClass = status === 'done' ? 'alert-good' : 'alert-warning';
+                    
+                    html += `
+                        <div class="meeting-note-item" style="border:1px solid #ddd;margin:10px 0;padding:15px;border-radius:5px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                <h4 style="margin:0;">${note.Clinic || 'Unknown Clinic'}</h4>
+                                <span class="alert-badge ${statusClass}">${statusText}</span>
+                            </div>
+                            <div style="margin-bottom:8px;"><strong>Date:</strong> ${note.Date || 'N/A'}</div>
+                            <div style="margin-bottom:8px;"><strong>Metric:</strong> ${note.Metric || 'N/A'}</div>
+                            <div style="margin-bottom:8px;"><strong>Notes:</strong> ${note.Notes || 'No notes available'}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            }
+            
+            // Filter meeting notes based on selected filters
+            function filterMeetingNotes() {
+                const dateFilter = document.getElementById('meetingDateFilter').value;
+                const clinicFilter = document.getElementById('meetingClinicFilter').value;
+                const metricFilter = document.getElementById('meetingMetricFilter').value;
+                const doneFilter = document.getElementById('meetingDoneFilter').value;
+                
+                filteredMeetingNotesData = allMeetingNotesData.filter(note => {
+                    let matches = true;
+                    
+                    if (dateFilter && note.Date && !note.Date.includes(dateFilter)) {
+                        matches = false;
+                    }
+                    
+                    if (clinicFilter !== 'all' && note.Clinic !== clinicFilter) {
+                        matches = false;
+                    }
+                    
+                    if (metricFilter !== 'all' && note.Metric !== metricFilter) {
+                        matches = false;
+                    }
+                    
+                    if (doneFilter !== 'all') {
+                        const isDone = note.Done === 'TRUE' || note.Done === 'true';
+                        if (doneFilter === 'done' && !isDone) matches = false;
+                        if (doneFilter === 'notDone' && isDone) matches = false;
+                    }
+                    
+                    return matches;
+                });
+                
+                renderMeetingNotes();
+            }
+            
+            // Populate metric selector buttons for historical trends
+            function populateMetricSelector() {
+                console.log("Populating metric selector buttons");
+                const metricSelector = document.getElementById('metricSelector');
+                if (!metricSelector) {
+                    console.warn("Metric selector element not found");
+                    return;
+                }
+                
+                // Create metric buttons based on metricsDefinition
+                const metricsToShow = metricsDefinition.filter(m => m.type !== 'text'); // Exclude text-only metrics
+                let html = '';
+                
+                metricsToShow.forEach((metric, index) => {
+                    const isActive = metric.id === selectedMetric ? 'active' : '';
+                    html += `<button class="metric-btn ${isActive}" onclick="selectMetric('${metric.id}')" disabled>${metric.name}</button>`;
+                });
+                
+                metricSelector.innerHTML = html;
+            }
+            
+            // Select a metric for historical trends
+            function selectMetric(metricId) {
+                selectedMetric = metricId;
+                
+                // Update button states
+                document.querySelectorAll('.metric-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                // Update charts
+                updateHistoricalCharts();
+            }
+            
+            // Update historical charts (stub function to prevent console errors)
+            function updateHistoricalCharts() {
+                console.log('updateHistoricalCharts called for metric:', selectedMetric);
+                // This function would normally update the historical trend charts
+                // For now, it's a stub to prevent console errors
+                // TODO: Implement actual chart updating logic when historical charts are needed
+            }
+            
             // Initial setup function called after Google Charts loads
             async function setupDashboard() {
                 console.log("Dashboard setup initiated.");
@@ -1037,7 +1244,7 @@
                 if (googleSheetDataUrl && googleSheetBenchmarkUrl) {
                      console.log(`Attempting to autoload data from: ${googleSheetDataUrl}`);
                      console.log(`Attempting to autoload benchmarks from: ${googleSheetBenchmarkUrl}`);
-                     await Promise.all([initializeDashboard(), loadDailyData()]); // load weekly and daily data in parallel
+                     await Promise.all([initializeDashboard(), loadDailyData(), loadMeetingNotesData()]); // load weekly, daily, and meeting notes data in parallel
                 } else {
                      addValidationMessage('error', "Configuration Error: Data or Benchmark Google Sheet URL is not configured in the script.");
                      displayValidationMessages();
