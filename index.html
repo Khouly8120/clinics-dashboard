@@ -13,23 +13,17 @@
             window.location.href = "error.html";
         }
     </script>
-</head>
-<body>
-    <h1>Management Clinic Dashboard</h1>
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Clinic Metrics Alert Dashboard (Dual Sheet)</title>
-        <!-- Google Charts Library -->
-        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-        <!-- Date Range Picker Dependencies -->
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-        <style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinic Metrics Alert Dashboard (Dual Sheet)</title>
+    <!-- Google Charts Library -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!-- Date Range Picker Dependencies -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <style>
             /* CSS Styles remain largely the same, adding styles for validation */
             * {
                 margin: 0;
@@ -1742,28 +1736,21 @@
                     targetDisplay = targetDisplay.trim().slice(0,-1); // remove trailing % if present
                 }
                 const targetText = (targetDisplay===null||targetDisplay===undefined||targetDisplay==='') ? 'Target: N/A' : `Target: ${targetDisplay}`;
+                
                 // Get trend indicator for the metric (if available)
-    const trend = row[metricId + 'Trend'] || '';
-    const arrow = getTrendArrow(trend);
-    let arrowSpan = '';
-                const metricHeader = metricToColumn[metricId];
-                const tbody=document.getElementById('dailyTableBody');
-                const thead=document.getElementById('dailyTableHead');
-                if(!tbody||!thead) return;
-                tbody.innerHTML='';
-                thead.innerHTML='';
-                if(Object.keys(allClinicsDailyData).length===0){
-                    tbody.innerHTML='<tr><td style="text-align:center;">No daily data</td></tr>';return;
-                }
-                // Collect dates
-                let dateSet=new Set();
-                Object.values(allClinicsDailyData).forEach(arr=>arr.forEach(r=>dateSet.add(r.Date)));
-                let dates=[...dateSet].sort((a,b)=>a.localeCompare(b));
-                // Filter by selected range if provided, else last 7 days
-                const rangeVal = document.getElementById('dateRangePickerDaily').value;
-                let startDate,endDate;
-                if(rangeVal && rangeVal.includes(' - ')){
-                    const [sRaw,eRaw]=rangeVal.split(' - ');
+                const trend = row[metricId + 'Trend'] || '';
+                const arrow = getTrendArrow(trend);
+                
+                // Determine trend direction if trend is not available
+                let trendArrow = arrow || '';
+                if (!trendArrow && displayValue !== 'N/A' && targetDisplay !== 'N/A') {
+                    const numValue = parseFloat(displayValue);
+                    const numTarget = parseFloat(targetDisplay);
+                    if (!isNaN(numValue) && !isNaN(numTarget)) {
+                        // Add arrow based on comparison to target
+                        const higherIsBetter = !(metricId === 'cancellation' || metricId === 'noShow' || metricId === 'noUpcoming');
+                        if (higherIsBetter) {
+                            trendArrow = numValue >= numTarget ? '▲' : '▼';
                     startDate=sRaw.trim();
                     endDate=eRaw.trim();
                 }
@@ -3317,27 +3304,71 @@ function generateMetricCell(entry, metricId){
 
     return `<td class="metric-value">
                 <div>${display} ${arrowSpan}</div>
-                <span class="alert-badge alert-${alertLevel}">${alertLevel.toUpperCase()}</span>
-                <div class="deviation">${targetText}</div>
-            </td>`;
+                <div class="target-deviation">${targetText}</div>
+              </td>`;
 }
 
-// Generate cell for daily pivot table (if needed)
 function generateDailyMetricCell(row, metricId){
     const metricMap = { targetVisits:'Target of Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target', noUpcoming:'No Upcoming %', cancellation:'Cancellation %', noShow:'No Show %', utilization:'Utilization %', satisfactionCollect:'Satisfaction Collection %' };
     const header = metricMap[metricId] || metricId;
     const val = row[header];
     const display = (val===null||val===undefined||val==='') ? 'N/A' : val;
     const alert = row[metricId+'Alert']||'normal';
-    return `<td class="metric-value"><span class="alert-badge alert-${alert}">${display}</span></td>`;
-}
+
+    // Get benchmark/target value
+    const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic] || latestDailyBenchmarkByClinic[row.Clinic] || {};
+    let targetVal;
+    switch(metricId){
+        case 'targetVisits': targetVal = bench['Target of Visits'] ?? bench['TargetVisits']; break;
+        case 'googleReviews': targetVal = bench['Google Reviews'] ?? bench['GoogleReviews']; break;
+        case 'newPatients': targetVal = bench['New Patients Target']; break;
+        case 'noUpcoming': targetVal = bench['No Upcoming %']; break;
+        case 'cancellation': targetVal = bench['Cancellation %']; break;
+        case 'noShow': targetVal = bench['No Show %']; break;
+        case 'utilization': targetVal = bench['Utilization %']; break;
+        case 'satisfactionCollect': targetVal = bench['Satisfaction Collection %']; break;
+        case 'patientWaitTime': targetVal = bench['Patient Wait Time']; break;
+        case 'staffProductivity': targetVal = bench['Staff Productivity']; break;
+        case 'patientSatisfaction': targetVal = bench['Patient Satisfaction']; break;
+        case 'revenueGrowth': targetVal = bench['Revenue Growth']; break;
+        default: targetVal = bench[header]; break;
+    }
     
-            // Show loading overlay
-            function showLoading(message = "Loading...") {
-                document.getElementById('loadingMessage').textContent = message;
-                document.getElementById('loadingOverlay').style.display = 'flex';
+    // Format target for display
+    let targetDisplay = targetVal;
+    if(typeof targetDisplay === 'string' && targetDisplay.trim().endsWith('%')){
+        targetDisplay = targetDisplay.trim().slice(0,-1); // remove trailing % if present
+    }
+    const targetText = (targetDisplay===null||targetDisplay===undefined||targetDisplay==='') ? 'Target: N/A' : `Target: ${targetDisplay}`;
+    
+    // Get trend indicator for the metric
+    const trend = row[metricId + 'Trend'] || '';
+    const arrow = getTrendArrow(trend);
+    
+    // Determine trend direction if trend is not available
+    let trendArrow = arrow || '';
+    if (!trendArrow && display !== 'N/A' && targetDisplay !== 'N/A') {
+        const numValue = parseFloat(display);
+        const numTarget = parseFloat(targetDisplay);
+        if (!isNaN(numValue) && !isNaN(numTarget)) {
+            // Add arrow based on comparison to target
+            const higherIsBetter = !(metricId === 'cancellation' || metricId === 'noShow' || metricId === 'noUpcoming');
+            if (higherIsBetter) {
+                trendArrow = numValue >= numTarget ? '▲' : '▼';
+            } else {
+                trendArrow = numValue <= numTarget ? '▲' : '▼';
             }
+        }
+    }
     
+    // Return the cell with all elements: value, alert badge with text, target text, and trend arrow
+    return `<td class="metric-value">
+            ${display}
+            <span class="alert-badge alert-${alert}">${alert.toUpperCase()}</span>
+            <div class="deviation">${targetText} ${trendArrow}</div>
+           </td>`;
+}
+
             // Hide loading overlay
             function hideLoading(message = null) {
                  const overlay = document.getElementById('loadingOverlay');
@@ -3398,8 +3429,8 @@ function generateDailyMetricCell(row, metricId){
                 hideLoading();
                 console.log("Export complete.");
             }
-    
+        } // Added missing closing brace
+    }
         </script>
     </body>
     </html>
-    
