@@ -642,8 +642,87 @@
                 .metric-grid {
                     grid-template-columns: 1fr;
                 }
+                
+                .meeting-notes-filters {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+                
+                .meeting-notes-filters > div {
+                    margin-bottom: 10px;
+                    margin-right: 0 !important;
+                }
+                
+                .meeting-notes-box {
+                    width: 100% !important;
+                }
             }
         .pivot-date{ text-align:center; }
+        
+        /* Meeting Notes Styles */
+        .meeting-notes-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .meeting-notes-box {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 15px;
+            width: calc(33.33% - 20px);
+            min-width: 300px;
+        }
+        
+        .meeting-notes-header {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        .meeting-notes-checklist {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .meeting-notes-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dotted #eee;
+        }
+        
+        .meeting-notes-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .meeting-notes-check {
+            margin-right: 10px;
+            margin-top: 3px;
+        }
+        
+        .meeting-notes-details {
+            flex: 1;
+        }
+        
+        .meeting-notes-metric {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .meeting-notes-notes {
+            font-size: 0.9em;
+            color: #666;
+        }
     </style>
     </head>
     <body>
@@ -711,6 +790,7 @@
                 <button class="tab-button" onclick="switchTab(event, 'historicalTrends')">Historical Trends</button>
                 <button class="tab-button" onclick="switchTab(event, 'comparisonTab')">Comparison</button>
                 <button class="tab-button" onclick="switchTab(event, 'dailyTab')">Daily Numbers</button>
+                <button class="tab-button" onclick="switchTab(event, 'meetingNotesTab')">Meeting Notes</button>
             </div>
             
             <div class="tab-content active" id="currentData">
@@ -880,6 +960,46 @@
                         <tbody id="dailyTableBody"><tr><td style="text-align:center;">Loading...</td></tr></tbody></table>
                 </div>
             </div>
+            
+            <div class="tab-content" id="meetingNotesTab">
+                <div class="table-header">Meeting Notes
+                    <div class="meeting-notes-filters" style="display:flex;align-items:center;margin-left:15px;">
+                        <div style="margin-right:15px;">
+                            <label for="meetingDateFilter" style="font-weight:bold;">Date Filter:</label>
+                            <input type="date" id="meetingDateFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
+                        </div>
+                        <div style="margin-right:15px;">
+                            <label for="meetingClinicFilter" style="font-weight:bold;">Clinic Filter:</label>
+                            <select id="meetingClinicFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
+                                <option value="all">All Clinics</option>
+                            </select>
+                        </div>
+                        <div style="margin-right:15px;">
+                            <label for="meetingMetricFilter" style="font-weight:bold;">Metric Filter:</label>
+                            <select id="meetingMetricFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
+                                <option value="all">All Metrics</option>
+                                <option value="Target of Visits">Target of Visits</option>
+                                <option value="New Patients To">New Patients</option>
+                                <option value="Cancellation %">Cancellation %</option>
+                                <option value="No Show %">No Show %</option>
+                                <option value="Google Reviews Only">Google Reviews</option>
+                                <option value="Satisfaction Collect">Satisfaction</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="meetingDoneFilter" style="font-weight:bold;">Status Filter:</label>
+                            <select id="meetingDoneFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
+                                <option value="all">All Status</option>
+                                <option value="done">Done</option>
+                                <option value="notDone">Not Done</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div id="meetingNotesContainer" class="meeting-notes-container" style="padding:20px;">
+                    <div id="loadingMeetingNotes" style="text-align:center;">Loading meeting notes...</div>
+                </div>
+            </div>
         </div>
     
         <div class="details-panel" id="detailsPanel">
@@ -898,10 +1018,17 @@
             google.charts.setOnLoadCallback(setupDashboard);
             
             async function setupDashboardAsync(){
-                await Promise.all([loadDataAndBenchmarks(), loadDailyData()]);
+                await Promise.all([loadDataAndBenchmarks(), loadDailyData(), loadMeetingNotesData()]);
                 initializeTabs();
                 renderCurrentWeek();
                 renderDailyCurrent();
+                renderMeetingNotes();
+                
+                // Setup event listeners for Meeting Notes filters
+                document.getElementById('meetingDateFilter').addEventListener('change', filterMeetingNotes);
+                document.getElementById('meetingClinicFilter').addEventListener('change', filterMeetingNotes);
+                document.getElementById('meetingMetricFilter').addEventListener('change', filterMeetingNotes);
+                document.getElementById('meetingDoneFilter').addEventListener('change', filterMeetingNotes);
             }
     
             // --- Configuration ---
@@ -911,12 +1038,14 @@
             // DAILY metrics (Target Visits & Google Reviews)
             const googleSheetDailyDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1535490642&single=true&output=csv';
             const googleSheetDailyBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1352823327&single=true&output=csv';
+            // Meeting Notes Google Sheet URL
+            const googleSheetMeetingNotesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1857583669&single=true&output=csv';
     
             // --- Global variables for Daily Metrics ---
             let allClinicsDailyData = {};
             let dailyBenchmarkData = {};
     let latestDailyBenchmarkByClinic = {}; // fallback map
-            let latestDailyDate = ''; 
+            let latestDailyDate = '';
     
             // --- Data Definitions ---
             // Note: AreaManagerNotes removed, AreaManagerNotesAlert kept (no benchmark)
@@ -982,6 +1111,11 @@
                 end: moment()
             };
             let validationMessages = []; // Store validation messages
+            
+            // --- Meeting Notes Variables ---
+            let meetingNotesData = []; // Store all meeting notes data
+            let filteredMeetingNotes = []; // Store filtered meeting notes
+            let meetingNotesClinicsList = new Set(); // List of unique clinics for filter dropdown
     
             // --- Core Functions ---
     
@@ -3323,6 +3457,215 @@ function generateDailyMetricCell(row, metricId){
                 document.body.removeChild(link);
                 hideLoading();
                 console.log("Export complete.");
+            }
+            
+            // --- Meeting Notes Functions ---
+            
+            // Load meeting notes data from Google Sheet
+            async function loadMeetingNotesData() {
+                console.log("Loading meeting notes data...");
+                try {
+                    // Reset data
+                    // Clear existing data
+                    meetingNotesData.length = 0;
+                    filteredMeetingNotes.length = 0;
+                    meetingNotesClinicsList.clear();
+                    
+                    // Fetch meeting notes CSV
+                    const response = await fetch(googleSheetMeetingNotesUrl);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch meeting notes data. Status: ${response.status}`);
+                    }
+                    
+                    const csvText = await response.text();
+                    if (!csvText || csvText.trim().length === 0) {
+                        throw new Error('Meeting notes CSV data is empty');
+                    }
+                    
+                    // Parse CSV data
+                    const lines = csvText.trim().split(/\r?\n/);
+                    if (lines.length < 2) {
+                        throw new Error("Meeting notes CSV must have at least a header row and one data row");
+                    }
+                    
+                    const headers = parseCsvRow(lines[0]); // Using existing CSV parse function
+                    
+                    // Process each row
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue; // Skip empty lines
+                        
+                        const values = parseCsvRow(lines[i]);
+                        if (values.length !== headers.length) {
+                            console.warn(`Skipped row ${i+1} due to column count mismatch`);
+                            continue;
+                        }
+                        
+                        const entry = {};
+                        for (let j = 0; j < headers.length; j++) {
+                            entry[headers[j]] = values[j];
+                        }
+                        
+                        // Convert date to standard format if needed
+                        if (entry['Date of meeting']) {
+                            const dateStr = entry['Date of meeting'];
+                            // Check if date is in MM-DD-YYYY format and convert if needed
+                            const dateParts = dateStr.split('-');
+                            if (dateParts.length === 3) {
+                                // Format the date in YYYY-MM-DD for sorting/filtering
+                                const month = dateParts[0].padStart(2, '0');
+                                const day = dateParts[1].padStart(2, '0');
+                                const year = dateParts[2];
+                                entry['DateFormatted'] = `${year}-${month}-${day}`;
+                            } else {
+                                entry['DateFormatted'] = dateStr; // Keep as is
+                            }
+                        }
+                        
+                        // Add clinic to the list for filter dropdown
+                        if (entry['Clinic']) {
+                            meetingNotesClinicsList.add(entry['Clinic']);
+                        }
+                        
+                        meetingNotesData.push(entry);
+                    }
+                    
+                    // Sort by date (newest first)
+                    meetingNotesData.sort((a, b) => {
+                        return b.DateFormatted?.localeCompare(a.DateFormatted) || 0;
+                    });
+                    
+                    // Set filtered data to all data initially
+                    filteredMeetingNotes = [...meetingNotesData];
+                    
+                    // Populate clinic filter dropdown
+                    populateMeetingNotesClinicFilter();
+                    
+                    console.log(`Loaded ${meetingNotesData.length} meeting notes entries`);
+                    return true;
+                    
+                } catch (error) {
+                    console.error("Error loading meeting notes:", error);
+                    document.getElementById('loadingMeetingNotes').innerHTML = 
+                        `<div class="error">Error loading meeting notes: ${error.message}</div>`;
+                    return false;
+                }
+            }
+            
+            // Populate the clinic filter dropdown for meeting notes
+            function populateMeetingNotesClinicFilter() {
+                const clinicSelect = document.getElementById('meetingClinicFilter');
+                if (!clinicSelect) return;
+                
+                // Clear existing options except the "All Clinics" option
+                while (clinicSelect.options.length > 1) {
+                    clinicSelect.remove(1);
+                }
+                
+                // Add clinic options
+                const sortedClinics = Array.from(meetingNotesClinicsList).sort();
+                sortedClinics.forEach(clinic => {
+                    const option = document.createElement('option');
+                    option.value = clinic;
+                    option.textContent = clinic;
+                    clinicSelect.appendChild(option);
+                });
+            }
+            
+            // Render meeting notes boxes with checklists
+            function renderMeetingNotes() {
+                const container = document.getElementById('meetingNotesContainer');
+                if (!container) return;
+                
+                if (!filteredMeetingNotes || filteredMeetingNotes.length === 0) {
+                    container.innerHTML = '<p>No meeting notes found matching the selected filters.</p>';
+                    return;
+                }
+                
+                // Group notes by date
+                const notesByDate = {};
+                filteredMeetingNotes.forEach(note => {
+                    const date = note['Date of meeting'];
+                    if (!date) return;
+                    
+                    if (!notesByDate[date]) {
+                        notesByDate[date] = [];
+                    }
+                    notesByDate[date].push(note);
+                });
+                
+                // Generate HTML for each date group
+                let html = '';
+                Object.keys(notesByDate).forEach(date => {
+                    const notes = notesByDate[date];
+                    
+                    html += `
+                    <div class="meeting-notes-box">
+                        <div class="meeting-notes-header">Date of meeting: ${date}</div>
+                        <ul class="meeting-notes-checklist">
+                    `;
+                    
+                    notes.forEach(note => {
+                        // Determine if the item is done
+                        const isDone = note['Done'] === 'TRUE' || note['Done'] === 'true' || note['Done'] === '✓';
+                        const checkedAttr = isDone ? 'checked' : '';
+                        
+                        html += `
+                        <li class="meeting-notes-item">
+                            <input type="checkbox" class="meeting-notes-check" ${checkedAttr} disabled>
+                            <div class="meeting-notes-details">
+                                <span class="meeting-notes-metric">${note['Clinic']} - ${note['Metric']}</span>
+                                <span class="meeting-notes-notes">${note['Notes'] || ''}</span>
+                            </div>
+                        </li>
+                        `;
+                    });
+                    
+                    html += `
+                        </ul>
+                    </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            }
+            
+            // Filter meeting notes based on selected criteria
+            function filterMeetingNotes() {
+                const dateFilter = document.getElementById('meetingDateFilter').value;
+                const clinicFilter = document.getElementById('meetingClinicFilter').value;
+                const metricFilter = document.getElementById('meetingMetricFilter').value;
+                const doneFilter = document.getElementById('meetingDoneFilter').value;
+                
+                // Filter the data
+                filteredMeetingNotes = meetingNotesData.filter(note => {
+                    // Date filter
+                    if (dateFilter && note['DateFormatted'] !== dateFilter) {
+                        return false;
+                    }
+                    
+                    // Clinic filter
+                    if (clinicFilter !== 'all' && note['Clinic'] !== clinicFilter) {
+                        return false;
+                    }
+                    
+                    // Metric filter - check if metric starts with the filter value
+                    if (metricFilter !== 'all' && !note['Metric']?.startsWith(metricFilter)) {
+                        return false;
+                    }
+                    
+                    // Done filter
+                    if (doneFilter !== 'all') {
+                        const isDone = note['Done'] === 'TRUE' || note['Done'] === 'true' || note['Done'] === '✓';
+                        if ((doneFilter === 'done' && !isDone) || (doneFilter === 'notDone' && isDone)) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                });
+                
+                // Re-render the notes
+                renderMeetingNotes();
             }
     
         </script>
