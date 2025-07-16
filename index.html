@@ -972,11 +972,13 @@
     
             // --- Configuration ---
             // HARDCODED Google Sheet URLs - Replace these if your published sheet URLs change
-            const googleSheetDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=0&single=true&output=csv'; 
+            const googleSheetDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=0&single=true&output=csv'; // Data sheet - confirmed at gid=0 
             const googleSheetBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1294580086&single=true&output=csv'; 
             // DAILY metrics (Target Visits & Google Reviews)
             const googleSheetDailyDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1535490642&single=true&output=csv';
             const googleSheetDailyBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1352823327&single=true&output=csv';
+            // Meeting Notes Google Sheet URL
+            const googleSheetMeetingNotesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1857583669&single=true&output=csv';
     
             // --- Global variables for Daily Metrics ---
             let allClinicsDailyData = {};
@@ -1813,6 +1815,73 @@
     const trend = row[metricId + 'Trend'] || '';
     const arrow = getTrendArrow(trend);
     let arrowSpan = '';
+                const metricHeader = metricToColumn[metricId];
+                const tbody=document.getElementById('dailyTableBody');
+                const thead=document.getElementById('dailyTableHead');
+                if(!tbody||!thead) return;
+                tbody.innerHTML='';
+                thead.innerHTML='';
+                if(Object.keys(allClinicsDailyData).length===0){
+                    tbody.innerHTML='<tr><td style="text-align:center;">No daily data</td></tr>';return;
+                }
+                // Collect dates
+                let dateSet=new Set();
+                Object.values(allClinicsDailyData).forEach(arr=>arr.forEach(r=>dateSet.add(r.Date)));
+                let dates=[...dateSet].sort((a,b)=>a.localeCompare(b));
+                // Filter by selected range if provided, else last 7 days
+                const rangeVal = document.getElementById('dateRangePickerDaily').value;
+                let startDate,endDate;
+                if(rangeVal && rangeVal.includes(' - ')){
+                    const [sRaw,eRaw]=rangeVal.split(' - ');
+                    startDate=sRaw.trim();
+                    endDate=eRaw.trim();
+                }
+                if(startDate && endDate){
+                    dates = dates.filter(d=> d>=startDate && d<=endDate);
+                } else {
+                    // default to last 7 days
+                    dates = dates.slice(-7);
+                }
+                // header row
+                let headerRow='<tr><th>Clinic</th><th>Overall Alert</th>';
+                dates.forEach(d=>{headerRow+=`<th class="pivot-date">${moment(d).format('MMM D, YYYY')}</th>`;});
+                headerRow+='</tr>';
+                thead.innerHTML=headerRow;
+                // clinics rows
+                const clinics=Object.keys(allClinicsDailyData).sort((a,b)=>a.localeCompare(b));
+                clinics.forEach(clinic=>{
+                    let rowHtml=`<tr><td class="clinic-name">${clinic}</td>`;
+                    let achievedSum=0, targetSum=0, higherIsBetter=true;
+                    let dateCells='';
+                    dates.forEach(d=>{
+                        const rec=allClinicsDailyData[clinic].find(r=>r.Date===d);
+                        if(rec){
+                            dateCells+= generateDailyMetricCell(rec, metricId);
+                            const benchRow = dailyBenchmarkData[rec.Date+'|'+rec.Clinic] || latestDailyBenchmarkByClinic[rec.Clinic] || {};
+                            const benchVal = benchRow[metricHeader];
+                            const benchNumeric = toNumeric(benchVal);
+                            const achievedNumeric = toNumeric(rec[metricHeader]);
+                            if(benchNumeric!==null && achievedNumeric!==null){
+                                targetSum += benchNumeric;
+                                achievedSum += achievedNumeric;
+                            }
+                            const hFlag = benchRow[metricHeader+'_HigherIsBetter'];
+                            if(hFlag!==undefined&&hFlag!==null) higherIsBetter = (hFlag.toString().toLowerCase()==='true');
+                        } else {
+                            dateCells+='<td>N/A</td>';
+                        }
+                    });
+                    let overall='low';
+                    if(targetSum>0){
+                        overall = getAlertLevel(achievedSum, targetSum, higherIsBetter, metricId);
+                    }
+                    rowHtml+=`<td><span class=\"alert-badge alert-${overall}\">${overall.toUpperCase()}</span></td>`+dateCells+'</tr>';
+                    tbody.innerHTML+=rowHtml;
+                });
+            }
+            function renderDailyPivot(){
+                const metricId = document.getElementById('dailyMetricSelector').value || 'targetVisits';
+                const metricToColumn = { targetVisits:'Target of Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target', noUpcoming:'No Upcoming %', cancellation:'Cancellation %', noShow:'No Show %', utilization:'Utilization %', satisfactionCollect:'Satisfaction Collection %' };
                 const metricHeader = metricToColumn[metricId];
                 const tbody=document.getElementById('dailyTableBody');
                 const thead=document.getElementById('dailyTableHead');
