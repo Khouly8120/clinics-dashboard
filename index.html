@@ -1827,17 +1827,16 @@
                         if(!latestDailyBenchmarkByClinic[r.Clinic] || r.Date > latestDailyBenchmarkByClinic[r.Clinic].Date){
                             latestDailyBenchmarkByClinic[r.Clinic] = r;
                         }
-                        dailyBenchmarkData[r.Date+'|'+r.Clinic] = r;
                     });
                     processAndStoreDailyData(dailyParsed);
                     // Refresh Daily Numbers tab now that data is ready
-                    renderDailyCurrent();
+                    renderDailyPivot();
                     console.log('Daily metrics loaded');
                 } catch(err){
                     console.error('Daily metrics load error',err);
                 }
             }
-    
+            
             function processAndStoreDailyData(rows){
                 if(!rows||rows.length===0) return;
                 allClinicsDailyData = {};
