@@ -763,6 +763,30 @@
         color: white;
     }
     
+    .apply-filters-btn {
+        padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-radius: 6px;
+        color: white;
+        font-size: 0.9em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 120px;
+    }
+    
+    .apply-filters-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.6);
+        transform: translateY(-1px);
+    }
+    
+    .apply-filters-btn:active {
+        transform: translateY(0);
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
     .meeting-notes-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
