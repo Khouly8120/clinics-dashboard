@@ -644,7 +644,71 @@
                 }
             }
         .pivot-date{ text-align:center; }
-    </style>
+    
+    /* Meeting Notes Styles */
+    .meeting-notes-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        padding: 20px;
+    }
+    
+    .meeting-box {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 15px;
+        width: 300px;
+        min-height: 200px;
+    }
+    
+    .meeting-box h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #eee;
+        font-size: 1.1em;
+    }
+    
+    .meeting-checklist {
+        list-style-type: none;
+        padding: 0;
+    }
+    
+    .meeting-checklist li {
+        margin-bottom: 10px;
+        padding: 8px;
+        background-color: #f9f9f9;
+        border-radius: 4px;
+        display: flex;
+        align-items: flex-start;
+    }
+    
+    .meeting-checklist input[type="checkbox"] {
+        margin-right: 10px;
+        margin-top: 3px;
+    }
+    
+    .meeting-clinic {
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .meeting-metric {
+        color: #3498db;
+    }
+    
+    .meeting-notes {
+        margin-top: 5px;
+        color: #666;
+        font-size: 0.9em;
+    }
+    
+    .meeting-item-done {
+        text-decoration: line-through;
+        opacity: 0.7;
+    }
+</style>
     </head>
     <body>
         <div class="loading-overlay" id="loadingOverlay">
@@ -711,8 +775,9 @@
                 <button class="tab-button" onclick="switchTab(event, 'historicalTrends')">Historical Trends</button>
                 <button class="tab-button" onclick="switchTab(event, 'comparisonTab')">Comparison</button>
                 <button class="tab-button" onclick="switchTab(event, 'dailyTab')">Daily Numbers</button>
-                <button class="tab-button" onclick="switchTab(event, 'meetingNotesTab')">Meeting Notes</button>
-            </div>
+            
+        <button class="tab-button" onclick="switchTab(event, 'meetingNotesTab')">Meeting Notes</button>
+    </div>
             
             <div class="tab-content active" id="currentData">
                 <div class="main-table">
@@ -876,51 +941,9 @@
                         <option value="satisfactionCollect">Satisfaction Collection %</option>
                     </select>
                 </div>
-                <!-- Daily Metrics Container for renderDailyCurrent function -->
-                <div id="dailyMetricsContainer" style="margin-bottom: 20px;"></div>
                 <div class="responsive-table" style="overflow:auto;max-height:500px;">
                     <table id="dailyTable"><thead id="dailyTableHead"></thead>
                         <tbody id="dailyTableBody"><tr><td style="text-align:center;">Loading...</td></tr></tbody></table>
-                </div>
-            </div>
-            
-            <div class="tab-content" id="meetingNotesTab">
-                <div class="table-header">Meeting Notes
-                    <div class="meeting-notes-filters" style="display:flex;align-items:center;margin-left:15px;">
-                        <div style="margin-right:15px;">
-                            <label for="meetingDateFilter" style="font-weight:bold;">Date Filter:</label>
-                            <input type="date" id="meetingDateFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
-                        </div>
-                        <div style="margin-right:15px;">
-                            <label for="meetingClinicFilter" style="font-weight:bold;">Clinic Filter:</label>
-                            <select id="meetingClinicFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
-                                <option value="all">All Clinics</option>
-                            </select>
-                        </div>
-                        <div style="margin-right:15px;">
-                            <label for="meetingMetricFilter" style="font-weight:bold;">Metric Filter:</label>
-                            <select id="meetingMetricFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
-                                <option value="all">All Metrics</option>
-                                <option value="Target of Visits">Target of Visits</option>
-                                <option value="New Patients To">New Patients</option>
-                                <option value="Cancellation %">Cancellation %</option>
-                                <option value="No Show %">No Show %</option>
-                                <option value="Google Reviews Only">Google Reviews</option>
-                                <option value="Satisfaction Collect">Satisfaction</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="meetingDoneFilter" style="font-weight:bold;">Status Filter:</label>
-                            <select id="meetingDoneFilter" style="margin-left:8px;" onchange="filterMeetingNotes()">
-                                <option value="all">All Status</option>
-                                <option value="done">Done</option>
-                                <option value="notDone">Not Done</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div id="meetingNotesContainer" class="meeting-notes-container" style="padding:20px;">
-                    <div id="loadingMeetingNotes" style="text-align:center;">Loading meeting notes...</div>
                 </div>
             </div>
         </div>
@@ -940,50 +963,26 @@
             google.charts.load('current', {'packages':['corechart', 'line', 'table']});
             google.charts.setOnLoadCallback(setupDashboard);
             
-            // Main setup function called by Google Charts
-            function setupDashboard() {
-                console.log('setupDashboard called by Google Charts');
-                setupDashboardAsync();
-            }
-            
             async function setupDashboardAsync(){
-                console.log('setupDashboardAsync starting...');
-                try {
-                    await Promise.all([loadDailyData(), loadMeetingNotesData()]);
-                    initializeTabs();
-                    renderCurrentWeek();
-                    renderDailyCurrent();
-                    console.log('Dashboard setup complete!');
-                } catch (error) {
-                    console.error('Dashboard setup failed:', error);
-                }
+                await Promise.all([loadDataAndBenchmarks(), loadDailyData()]);
+                initializeTabs();
+                renderCurrentWeek();
+                renderDailyCurrent();
             }
     
             // --- Configuration ---
             // HARDCODED Google Sheet URLs - Replace these if your published sheet URLs change
-            const googleSheetDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=0&single=true&output=csv'; // Data sheet - confirmed at gid=0 
+            const googleSheetDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=0&single=true&output=csv'; 
             const googleSheetBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1294580086&single=true&output=csv'; 
             // DAILY metrics (Target Visits & Google Reviews)
             const googleSheetDailyDataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1535490642&single=true&output=csv';
             const googleSheetDailyBenchmarkUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1352823327&single=true&output=csv';
-            // Meeting Notes Google Sheet URL
-            const googleSheetMeetingNotesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1857583669&single=true&output=csv';
     
             // --- Global variables for Daily Metrics ---
             let allClinicsDailyData = {};
             let dailyBenchmarkData = {};
     let latestDailyBenchmarkByClinic = {}; // fallback map
-            let latestDailyDate = '';
-            
-            // --- Global variables for Meeting Notes ---
-            let allMeetingNotesData = [];
-            let filteredMeetingNotesData = [];
-            
-            // --- Global variables for Historical Charts ---
-            let selectedMetric = 'targetVisits'; // Default selected metric
-            
-            // --- Global variables for Validation ---
-            let validationMessages = []; 
+            let latestDailyDate = ''; 
     
             // --- Data Definitions ---
             // Note: AreaManagerNotes removed, AreaManagerNotesAlert kept (no benchmark)
@@ -1040,7 +1039,7 @@
             let latestWeek = { year: 0, week: 0 };
             let previousWeek = { year: 0, week: 0 };
             let currentView = 'table';
-            // selectedMetric already declared above
+            let selectedMetric = 'newPatients'; // Default metric for historical charts
             let selectedClinic = 'all'; // Default clinic for historical charts
             let trendChart;
             let comparisonChart;
@@ -1048,1100 +1047,26 @@
                 start: moment().subtract(8, 'weeks'),
                 end: moment()
             };
-            // validationMessages already declared above
+            let validationMessages = []; // Store validation messages
     
             // --- Core Functions ---
     
-            // Initialize date pickers for the dashboard
-            function initializeDatePickers() {
-                console.log("Initializing date pickers");
-                // Initialize date range picker in historical trends tab
-                $('#dateRangePicker').daterangepicker({
-                    startDate: dateRange.start,
-                    endDate: dateRange.end,
-                    opens: 'left',
-                    locale: {
-                        format: 'MM/DD/YYYY'
-                    }
-                }, function(start, end) {
-                    dateRange.start = start;
-                    dateRange.end = end;
-                    updateHistoricalCharts();
-                });
-                
-                // Enable date picker controls after initialization
-                $('#dateRangePicker').prop('disabled', false);
-            }
-            
-            // Initialize daily date range picker
-            function initializeDailyRangePicker() {
-                console.log("Initializing daily date range picker");
-                // Get start date (1 month ago) and end date (today)
-                const startDate = moment().subtract(1, 'month');
-                const endDate = moment();
-                
-                // Initialize daily date range picker
-                $('#dateRangePickerDaily').daterangepicker({
-                    startDate: startDate,
-                    endDate: endDate,
-                    opens: 'left',
-                    locale: {
-                        format: 'MM/DD/YYYY'
-                    }
-                });
-                
-                // Enable daily date picker after initialization
-                $('#dateRangePickerDaily').prop('disabled', false);
-            }
-            
-            // Load Meeting Notes data from Google Sheets
-            async function loadMeetingNotesData() {
-                console.log("Loading meeting notes data...");
-                try {
-                    const csvText = await fetchDataFromSheet(googleSheetMeetingNotesUrl, 'Meeting Notes');
-                    const parsedData = parseMeetingNotesCSV(csvText);
-                    allMeetingNotesData = parsedData;
-                    filteredMeetingNotesData = parsedData;
-                    populateMeetingNotesFilters();
-                    renderMeetingNotes();
-                    console.log(`Loaded ${allMeetingNotesData.length} meeting notes entries.`);
-                } catch (error) {
-                    console.error("Error loading meeting notes:", error);
-                    document.getElementById('loadingMeetingNotes').innerHTML = `<p style="color:red;">Error loading meeting notes: ${error.message}</p>`;
-                }
-            }
-            
-            // Parse Meeting Notes CSV data
-            function parseMeetingNotesCSV(csvText) {
-                const lines = csvText.trim().split(/\r?\n/);
-                if (lines.length < 2) return [];
-                
-                const headers = lines[0].split(',').map(h => h.trim());
-                const data = [];
-                
-                for (let i = 1; i < lines.length; i++) {
-                    if (!lines[i].trim()) continue;
-                    const values = parseCsvRow(lines[i]);
-                    if (values.length !== headers.length) continue;
-                    
-                    const entry = {};
-                    headers.forEach((header, index) => {
-                        entry[header] = values[index];
-                    });
-                    data.push(entry);
-                }
-                return data;
-            }
-            
-            // Populate meeting notes filter dropdowns
-            function populateMeetingNotesFilters() {
-                const clinicFilter = document.getElementById('meetingClinicFilter');
-                const clinics = [...new Set(allMeetingNotesData.map(item => item.Clinic || item.clinic).filter(Boolean))];
-                
-                clinicFilter.innerHTML = '<option value="all">All Clinics</option>';
-                clinics.forEach(clinic => {
-                    clinicFilter.innerHTML += `<option value="${clinic}">${clinic}</option>`;
-                });
-            }
-            
-            // Render meeting notes data
-            function renderMeetingNotes() {
-                const container = document.getElementById('meetingNotesContainer');
-                if (!filteredMeetingNotesData || filteredMeetingNotesData.length === 0) {
-                    container.innerHTML = '<p style="text-align:center;">No meeting notes data available.</p>';
-                    return;
-                }
-                
-                let html = '<div class="meeting-notes-list">';
-                filteredMeetingNotesData.forEach(note => {
-                    const status = note.Done === 'TRUE' || note.Done === 'true' ? 'done' : 'not-done';
-                    const statusText = status === 'done' ? 'Done' : 'Not Done';
-                    const statusClass = status === 'done' ? 'alert-good' : 'alert-warning';
-                    
-                    html += `
-                        <div class="meeting-note-item" style="border:1px solid #ddd;margin:10px 0;padding:15px;border-radius:5px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                                <h4 style="margin:0;">${note.Clinic || 'Unknown Clinic'}</h4>
-                                <span class="alert-badge ${statusClass}">${statusText}</span>
-                            </div>
-                            <div style="margin-bottom:8px;"><strong>Date:</strong> ${note.Date || 'N/A'}</div>
-                            <div style="margin-bottom:8px;"><strong>Metric:</strong> ${note.Metric || 'N/A'}</div>
-                            <div style="margin-bottom:8px;"><strong>Notes:</strong> ${note.Notes || 'No notes available'}</div>
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                container.innerHTML = html;
-            }
-            
-            // Filter meeting notes based on selected filters
-            function filterMeetingNotes() {
-                const dateFilter = document.getElementById('meetingDateFilter').value;
-                const clinicFilter = document.getElementById('meetingClinicFilter').value;
-                const metricFilter = document.getElementById('meetingMetricFilter').value;
-                const doneFilter = document.getElementById('meetingDoneFilter').value;
-                
-                filteredMeetingNotesData = allMeetingNotesData.filter(note => {
-                    let matches = true;
-                    
-                    if (dateFilter && note.Date && !note.Date.includes(dateFilter)) {
-                        matches = false;
-                    }
-                    
-                    if (clinicFilter !== 'all' && note.Clinic !== clinicFilter) {
-                        matches = false;
-                    }
-                    
-                    if (metricFilter !== 'all' && note.Metric !== metricFilter) {
-                        matches = false;
-                    }
-                    
-                    if (doneFilter !== 'all') {
-                        const isDone = note.Done === 'TRUE' || note.Done === 'true';
-                        if (doneFilter === 'done' && !isDone) matches = false;
-                        if (doneFilter === 'notDone' && isDone) matches = false;
-                    }
-                    
-                    return matches;
-                });
-                
-                renderMeetingNotes();
-            }
-            
-            // Populate metric selector buttons for historical trends
-            function populateMetricSelector() {
-                console.log("Populating metric selector buttons");
-                const metricSelector = document.getElementById('metricSelector');
-                if (!metricSelector) {
-                    console.warn("Metric selector element not found");
-                    return;
-                }
-                
-                // Create metric buttons based on metricsDefinition
-                const metricsToShow = metricsDefinition.filter(m => m.type !== 'text'); // Exclude text-only metrics
-                let html = '';
-                
-                metricsToShow.forEach((metric, index) => {
-                    const isActive = metric.id === selectedMetric ? 'active' : '';
-                    html += `<button class="metric-btn ${isActive}" onclick="selectMetric('${metric.id}')" disabled>${metric.name}</button>`;
-                });
-                
-                metricSelector.innerHTML = html;
-            }
-            
-            // Select a metric for historical trends
-            function selectMetric(metricId) {
-                selectedMetric = metricId;
-                
-                // Update button states
-                document.querySelectorAll('.metric-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                event.target.classList.add('active');
-                
-                // Update charts
-                updateHistoricalCharts();
-            }
-            
-            // Update historical charts (stub function to prevent console errors)
-            function updateHistoricalCharts() {
-                console.log('updateHistoricalCharts called for metric:', selectedMetric);
-                // This function would normally update the historical trend charts
-                // For now, it's a stub to prevent console errors
-                // TODO: Implement actual chart updating logic when historical charts are needed
-            }
-            
-            // Show loading indicator
-            function showLoading(message = 'Loading...') {
-                console.log('Loading:', message);
-                const loadingElement = document.getElementById('loadingIndicator');
-                if (loadingElement) {
-                    loadingElement.style.display = 'block';
-                    loadingElement.textContent = message;
-                }
-            }
-            
-            // Hide loading indicator
-            function hideLoading(errorMessage = null) {
-                console.log('Loading complete', errorMessage ? ': ' + errorMessage : '');
-                const loadingElement = document.getElementById('loadingIndicator');
-                if (loadingElement) {
-                    loadingElement.style.display = 'none';
-                }
-                if (errorMessage) {
-                    console.error('Error:', errorMessage);
-                }
-            }
-            
-            // Get alert level for a metric value compared to benchmark
-            function getAlertLevel(value, benchmark, higherIsBetter = true) {
-                if (value === null || value === undefined || benchmark === null || benchmark === undefined) {
-                    return 'neutral';
-                }
-                
-                const numValue = parseFloat(value);
-                const numBenchmark = parseFloat(benchmark);
-                
-                if (isNaN(numValue) || isNaN(numBenchmark)) {
-                    return 'neutral';
-                }
-                
-                const threshold = 0.05; // 5% threshold
-                const diff = (numValue - numBenchmark) / numBenchmark;
-                
-                if (higherIsBetter) {
-                    if (diff >= threshold) return 'good';
-                    if (diff <= -threshold) return 'bad';
-                } else {
-                    if (diff <= -threshold) return 'good';
-                    if (diff >= threshold) return 'bad';
-                }
-                
-                return 'neutral';
-            }
-            
-            // Generate alert badge HTML for table cells
-            function generateAlertBadge(alertLevel) {
-                if (!alertLevel || alertLevel === 'undefined' || alertLevel === 'null') {
-                    alertLevel = 'normal';
-                }
-                
-                const level = alertLevel.toLowerCase();
-                let badgeClass = 'alert-badge';
-                let badgeText = alertLevel;
-                
-                // Map alert levels to CSS classes and display text
-                switch (level) {
-                    case 'critical':
-                        badgeClass += ' alert-critical';
-                        badgeText = 'Critical';
-                        break;
-                    case 'high':
-                        badgeClass += ' alert-high';
-                        badgeText = 'High';
-                        break;
-                    case 'medium':
-                        badgeClass += ' alert-medium';
-                        badgeText = 'Medium';
-                        break;
-                    case 'low':
-                        badgeClass += ' alert-low';
-                        badgeText = 'Low';
-                        break;
-                    case 'slight':
-                        badgeClass += ' alert-slight';
-                        badgeText = 'Slight';
-                        break;
-                    case 'normal':
-                    case 'good':
-                        badgeClass += ' alert-good';
-                        badgeText = 'Normal';
-                        break;
-                    case 'warning':
-                        badgeClass += ' alert-warning';
-                        badgeText = 'Warning';
-                        break;
-                    case 'bad':
-                        badgeClass += ' alert-bad';
-                        badgeText = 'Bad';
-                        break;
-                    default:
-                        badgeClass += ' alert-neutral';
-                        badgeText = 'Normal';
-                        break;
-                }
-                
-                return `<span class="${badgeClass}">${badgeText}</span>`;
-            }
-            
-            // Generate metric cell HTML with value, benchmark, and alert styling
-            function generateMetricCell(value, benchmark, higherIsBetter = true) {
-                if (value === null || value === undefined) {
-                    return '<span style="color:#999;">N/A</span>';
-                }
-                
-                const numValue = parseFloat(value);
-                if (isNaN(numValue)) {
-                    return `<span style="color:#999;">${value}</span>`;
-                }
-                
-                let cellContent = `<div style="font-weight:bold;">${numValue.toFixed(1)}%</div>`;
-                
-                if (benchmark !== null && benchmark !== undefined) {
-                    const numBenchmark = parseFloat(benchmark);
-                    if (!isNaN(numBenchmark)) {
-                        const alertLevel = getAlertLevel(numValue, numBenchmark, higherIsBetter);
-                        const alertBadge = generateAlertBadge(alertLevel);
-                        const trend = numValue > numBenchmark ? '↑' : numValue < numBenchmark ? '↓' : '→';
-                        
-                        cellContent += `<div style="font-size:0.8em; margin-top:4px;">`;
-                        cellContent += `${alertBadge}`;
-                        cellContent += `<div style="color:#666; margin-top:2px;">Target: ${numBenchmark.toFixed(1)}%</div>`;
-                        cellContent += `<div style="font-size:1.2em; margin-top:2px;">${trend}</div>`;
-                        cellContent += `</div>`;
-                    }
-                }
-                
-                return cellContent;
-            }
-            
-            // Calculate overall score for a clinic
-            function calculateOverallScore(clinic) {
-                // Simple scoring logic - count metrics that meet or exceed benchmarks
-                let score = 0;
-                let totalMetrics = 0;
-                
-                const metrics = [
-                    { value: clinic.newPatients, benchmark: clinic.newPatientsBenchmark, higherIsBetter: true },
-                    { value: clinic.visitsTarget, benchmark: clinic.visitsTargetBenchmark, higherIsBetter: true },
-                    { value: clinic.retention2nd, benchmark: clinic.retention2ndBenchmark, higherIsBetter: true },
-                    { value: clinic.retention5th, benchmark: clinic.retention5thBenchmark, higherIsBetter: true },
-                    { value: clinic.cancel, benchmark: clinic.cancelBenchmark, higherIsBetter: false },
-                    { value: clinic.noShow, benchmark: clinic.noShowBenchmark, higherIsBetter: false }
-                ];
-                
-                metrics.forEach(metric => {
-                    if (metric.value !== null && metric.value !== undefined && 
-                        metric.benchmark !== null && metric.benchmark !== undefined) {
-                        totalMetrics++;
-                        const alertLevel = getAlertLevel(metric.value, metric.benchmark, metric.higherIsBetter);
-                        if (alertLevel === 'good') score++;
-                    }
-                });
-                
-                if (totalMetrics === 0) return '<span style="color:#999;">N/A</span>';
-                
-                const percentage = (score / totalMetrics) * 100;
-                const alertLevel = percentage >= 80 ? 'good' : percentage >= 60 ? 'warning' : 'bad';
-                const badge = generateAlertBadge(alertLevel);
-                
-                return `<div><strong>${percentage.toFixed(0)}%</strong><br>${badge}</div>`;
-            }
-            
-            // Generate trend indicator
-            function generateTrendIndicator(trend) {
-                const trendLower = (trend || 'stable').toLowerCase();
-                let arrow = '→';
-                let color = '#666';
-                
-                switch (trendLower) {
-                    case 'up':
-                    case 'improving':
-                        arrow = '↑';
-                        color = '#28a745';
-                        break;
-                    case 'down':
-                    case 'declining':
-                        arrow = '↓';
-                        color = '#dc3545';
-                        break;
-                    case 'stable':
-                    default:
-                        arrow = '→';
-                        color = '#666';
-                        break;
-                }
-                
-                return `<span style="color:${color}; font-size:1.5em;">${arrow}</span>`;
-            }
-            
-            // Add validation message
-            function addValidationMessage(type, message) {
-                console.log(`Validation [${type}]:`, message);
-                validationMessages.push({ type, message, timestamp: new Date() });
-            }
-            
-            // Display validation messages
-            function displayValidationMessages() {
-                console.log('Displaying validation messages:', validationMessages);
-                // This would normally display messages in the UI
-                // For now, just log them to prevent console errors
-            }
-            
-            // Enable dashboard controls
-            function enableControls() {
-                console.log('Enabling dashboard controls');
-                // Enable various UI controls
-                const controls = document.querySelectorAll('button, select, input');
-                controls.forEach(control => {
-                    if (!control.hasAttribute('data-keep-disabled')) {
-                        control.disabled = false;
-                    }
-                });
-            }
-            
-            // Disable dashboard controls
-            function disableControls() {
-                console.log('Disabling dashboard controls');
-                // Disable various UI controls
-                const controls = document.querySelectorAll('button, select, input');
-                controls.forEach(control => {
-                    control.disabled = true;
-                });
-            }
-            
-            // Populate time period filter dropdown
-            function populateTimePeriodFilter() {
-                console.log('Populating time period filter');
-                const filterElement = document.getElementById('timePeriodFilter');
-                if (filterElement && availableWeeks && availableWeeks.length > 0) {
-                    let html = '<option value="latest">Latest Week</option>';
-                    availableWeeks.forEach(week => {
-                        html += `<option value="${week.year}-W${week.week}">Week ${week.week}, ${week.year}</option>`;
-                    });
-                    filterElement.innerHTML = html;
-                }
-            }
-            
-            // Populate clinic options dropdown
-            function populateClinicOptions() {
-                console.log('Populating clinic options');
-                const clinicFilter = document.getElementById('clinicFilter');
-                if (clinicFilter && allClinicsData) {
-                    let html = '<option value="all">All Clinics</option>';
-                    Object.keys(allClinicsData).forEach(clinic => {
-                        html += `<option value="${clinic}">${clinic}</option>`;
-                    });
-                    clinicFilter.innerHTML = html;
-                }
-            }
-            
-            // Render daily current data
-            function renderDailyCurrent() {
-                console.log('renderDailyCurrent called');
-                try {
-                    const dailyContainer = document.getElementById('dailyMetricsContainer');
-                    if (!dailyContainer) {
-                        console.warn('Daily metrics container not found');
-                        return;
-                    }
-                    
-                    if (!allClinicsDailyData || Object.keys(allClinicsDailyData).length === 0) {
-                        dailyContainer.innerHTML = '<div style="text-align:center; padding:20px;">No daily data available.</div>';
-                        return;
-                    }
-                    
-                    let html = '<div class="daily-metrics-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">';
-                    
-                    Object.keys(allClinicsDailyData).forEach(clinic => {
-                        const clinicData = allClinicsDailyData[clinic];
-                        if (clinicData && clinicData.length > 0) {
-                            const latestData = clinicData[clinicData.length - 1];
-                            html += `
-                                <div class="clinic-daily-card" style="border:1px solid #ddd; padding:15px; border-radius:8px; background:#f9f9f9;">
-                                    <h4 style="margin:0 0 10px 0; color:#333;">${clinic}</h4>
-                                    <div class="daily-metrics">
-                                        ${latestData['Target Visits'] ? `<div>Target Visits: <strong>${latestData['Target Visits']}</strong></div>` : ''}
-                                        ${latestData['Google Reviews'] ? `<div>Google Reviews: <strong>${latestData['Google Reviews']}</strong></div>` : ''}
-                                        ${latestData.Date ? `<div style="font-size:0.9em; color:#666; margin-top:8px;">Date: ${latestData.Date}</div>` : ''}
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    });
-                    
-                    html += '</div>';
-                    dailyContainer.innerHTML = html;
-                    console.log(`Rendered daily data for ${Object.keys(allClinicsDailyData).length} clinics`);
-                } catch (error) {
-                    console.error('Error rendering daily current data:', error);
-                }
-            }
-            
-            // Populate week selectors for comparison
-            function populateWeekSelectors() {
-                console.log('Populating week selectors for comparison');
-                const week1Select = document.getElementById('week1Select');
-                const week2Select = document.getElementById('week2Select');
-                
-                if (availableWeeks && availableWeeks.length > 0) {
-                    let options = '';
-                    availableWeeks.forEach(week => {
-                        options += `<option value="${week.year}-W${week.week}">Week ${week.week}, ${week.year}</option>`;
-                    });
-                    
-                    if (week1Select) week1Select.innerHTML = options;
-                    if (week2Select) week2Select.innerHTML = options;
-                }
-            }
-            
-            // Update summary cards
-            function updateSummaryCards(data) {
-                console.log('Updating summary cards with data:', data ? data.length : 0, 'clinics');
-                try {
-                    if (!data || data.length === 0) {
-                        console.warn('No data provided for summary cards');
-                        return;
-                    }
-                    
-                    // Calculate summary statistics
-                    const totalClinics = data.length;
-                    const avgNewPatients = data.reduce((sum, clinic) => sum + (parseFloat(clinic['New Patients %']) || 0), 0) / totalClinics;
-                    const avgVisitsTarget = data.reduce((sum, clinic) => sum + (parseFloat(clinic['Visits Target %']) || 0), 0) / totalClinics;
-                    const avgSatisfaction = data.reduce((sum, clinic) => sum + (parseFloat(clinic['Satisfaction Collect']) || 0), 0) / totalClinics;
-                    
-                    // Update summary card elements
-                    const totalClinicsElement = document.getElementById('totalClinics');
-                    const avgNewPatientsElement = document.getElementById('avgNewPatients');
-                    const avgVisitsTargetElement = document.getElementById('avgVisitsTarget');
-                    const avgSatisfactionElement = document.getElementById('avgSatisfaction');
-                    
-                    if (totalClinicsElement) totalClinicsElement.textContent = totalClinics;
-                    if (avgNewPatientsElement) avgNewPatientsElement.textContent = avgNewPatients.toFixed(1) + '%';
-                    if (avgVisitsTargetElement) avgVisitsTargetElement.textContent = avgVisitsTarget.toFixed(1) + '%';
-                    if (avgSatisfactionElement) avgSatisfactionElement.textContent = avgSatisfaction.toFixed(1);
-                    
-                    console.log('Summary cards updated successfully');
-                } catch (error) {
-                    console.error('Error updating summary cards:', error);
-                }
-            }
-            
-            // Populate table with data
-            function populateTable(data) {
-                console.log('Populating table with data:', data ? data.length : 0, 'entries');
-                try {
-                    const tableBody = document.getElementById('tableBody');
-                    if (!tableBody) {
-                        console.warn('Table body element not found');
-                        return;
-                    }
-                    
-                    if (!data || data.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="25" style="text-align:center; padding:20px;">No data available.</td></tr>';
-                        return;
-                    }
-                    
-                    // Generate table rows for existing table structure
-                    let html = '';
-                    data.forEach((clinic, index) => {
-                        const bgColor = index % 2 === 0 ? '#ffffff' : '#f9f9f9';
-                        html += `<tr style="background:${bgColor};" onclick="showDetails('${clinic.clinic}')">`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${clinic.clinic || 'N/A'}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${clinic.date || 'N/A'}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateAlertBadge(clinic.areaManagerNotesAlert || 'Normal')}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.newPatients, clinic.newPatientsBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.visitsTarget, clinic.visitsTargetBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.dailyDistribution, clinic.dailyDistributionBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.utilization, clinic.utilizationBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.retention2nd, clinic.retention2ndBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.retention5th, clinic.retention5thBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.retention10th, clinic.retention10thBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.retention15th, clinic.retention15thBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.cancel, clinic.cancelBenchmark, false)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.noShow, clinic.noShowBenchmark, false)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.noUpcoming, clinic.noUpcomingBenchmark, false)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.units, clinic.unitsBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.insuranceCoding, clinic.insuranceCodingBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.supportiveCoding, clinic.supportiveCodingBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.averageVisits, clinic.averageVisitsBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.confirmation, clinic.confirmationBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.directAccess, clinic.directAccessBenchmark, false)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.surveyCollection, clinic.surveyCollectionBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.satisfaction, clinic.satisfactionBenchmark, true)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${calculateOverallScore(clinic)}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateTrendIndicator(clinic.trend || 'stable')}</td>`;
-                        html += `<td style="padding:8px; border:1px solid #ddd;"><button class="action-button" onclick="showDetails('${clinic.clinic}')">View Details</button></td>`;
-                        html += '</tr>';
-                    });
-                    
-                    tableBody.innerHTML = html;
-                    console.log(`Populated table with ${data.length} rows`);
-                } catch (error) {
-                    console.error('Error populating table:', error);
-                }
-            }
-            
-            // Populate card view with data
-            function populateCardView(data) {
-                console.log('Populating card view with data:', data ? data.length : 0, 'entries');
-                try {
-                    const cardContainer = document.getElementById('cardView');
-                    if (!cardContainer) {
-                        console.warn('Card view container not found');
-                        return;
-                    }
-                    
-                    if (!data || data.length === 0) {
-                        cardContainer.innerHTML = '<div style="text-align:center; padding:20px;">No data available for card view.</div>';
-                        return;
-                    }
-                    
-                    // Create card view HTML
-                    let html = '<div class="cards-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:20px; padding:20px;">';
-                    
-                    data.forEach(clinic => {
-                        const newPatientsPercent = parseFloat(clinic['New Patients %']) || 0;
-                        const visitsTargetPercent = parseFloat(clinic['Visits Target %']) || 0;
-                        const cancellationPercent = parseFloat(clinic['Cancellation %']) || 0;
-                        const noShowPercent = parseFloat(clinic['No Show %']) || 0;
-                        const googleReviews = clinic['Google Reviews Only'] || 'N/A';
-                        const satisfaction = clinic['Satisfaction Collect'] || 'N/A';
-                        
-                        // Determine card color based on performance
-                        let cardColor = '#f8f9fa';
-                        if (visitsTargetPercent >= 90) cardColor = '#d4edda';
-                        else if (visitsTargetPercent >= 70) cardColor = '#fff3cd';
-                        else if (visitsTargetPercent < 70) cardColor = '#f8d7da';
-                        
-                        html += `
-                            <div class="clinic-card" style="border:1px solid #ddd; border-radius:8px; padding:20px; background:${cardColor}; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-                                <h3 style="margin:0 0 15px 0; color:#333; font-size:1.2em;">${clinic.Clinic || 'Unknown Clinic'}</h3>
-                                
-                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
-                                    <span style="font-weight:500;">New Patients:</span>
-                                    <span style="color:${newPatientsPercent >= 15 ? '#28a745' : '#dc3545'}; font-weight:bold;">${newPatientsPercent.toFixed(1)}%</span>
-                                </div>
-                                
-                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
-                                    <span style="font-weight:500;">Visits Target:</span>
-                                    <span style="color:${visitsTargetPercent >= 90 ? '#28a745' : visitsTargetPercent >= 70 ? '#ffc107' : '#dc3545'}; font-weight:bold;">${visitsTargetPercent.toFixed(1)}%</span>
-                                </div>
-                                
-                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
-                                    <span style="font-weight:500;">Cancellation:</span>
-                                    <span style="color:${cancellationPercent <= 10 ? '#28a745' : '#dc3545'}; font-weight:bold;">${cancellationPercent.toFixed(1)}%</span>
-                                </div>
-                                
-                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
-                                    <span style="font-weight:500;">No Show:</span>
-                                    <span style="color:${noShowPercent <= 5 ? '#28a745' : '#dc3545'}; font-weight:bold;">${noShowPercent.toFixed(1)}%</span>
-                                </div>
-                                
-                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
-                                    <span style="font-weight:500;">Google Reviews:</span>
-                                    <span style="font-weight:bold;">${googleReviews}</span>
-                                </div>
-                                
-                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
-                                    <span style="font-weight:500;">Satisfaction:</span>
-                                    <span style="font-weight:bold;">${satisfaction}</span>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    
-                    html += '</div>';
-                    cardContainer.innerHTML = html;
-                    console.log(`Populated card view with ${data.length} clinic cards`);
-                } catch (error) {
-                    console.error('Error populating card view:', error);
-                }
-            }
-            
-            // Update last updated timestamp
-            function updateLastUpdated() {
-                console.log('Updating last updated timestamp');
-                const lastUpdatedElement = document.getElementById('lastUpdated');
-                if (lastUpdatedElement) {
-                    lastUpdatedElement.textContent = new Date().toLocaleString();
-                }
-            }
-            
-            // Get data for a specific week
-            function getDataForWeek(year, week) {
-                console.log(`Getting data for week ${week}, year ${year}`);
-                if (availableWeeks && availableWeeks.length > 0) {
-                    const weekKey = `${year}-W${week}`;
-                    return allClinicsData[weekKey] || [];
-                }
-                return [];
-            }
-            
-            // Parse CSV data from Google Sheets
-            function parseCSVData(csvText) {
-                console.log('Parsing CSV data...');
-                try {
-                    const lines = csvText.trim().split('\n');
-                    if (lines.length < 2) {
-                        console.warn('CSV data has insufficient rows');
-                        return [];
-                    }
-                    
-                    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-                    console.log('📋 CSV Headers found:', headers);
-                    
-                    const data = [];
-                    let validRows = 0;
-                    let invalidRows = 0;
-                    
-                    for (let i = 1; i < lines.length; i++) {
-                        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-                        
-                        if (values.length >= headers.length) {
-                            const row = {};
-                            headers.forEach((header, index) => {
-                                row[header] = values[index] || '';
-                            });
-                            
-                            // Debug each row
-                            const hasClinic = row.Clinic && row.Clinic.trim() !== '';
-                            const hasWeek = row.Week && row.Week.trim() !== '';
-                            const hasYear = row.Year && row.Year.trim() !== '';
-                            
-                            if (!hasClinic || !hasWeek || !hasYear) {
-                                console.warn(`⚠️ Row ${i + 1} has missing data:`, {
-                                    clinic: hasClinic ? '✓' : '❌ Missing',
-                                    week: hasWeek ? '✓' : '❌ Missing', 
-                                    year: hasYear ? '✓' : '❌ Missing',
-                                    rowData: row
-                                });
-                                invalidRows++;
-                            } else {
-                                validRows++;
-                            }
-                            
-                            data.push(row);
-                        } else {
-                            console.warn(`⚠️ Row ${i + 1} has insufficient columns: expected ${headers.length}, got ${values.length}`);
-                            invalidRows++;
-                        }
-                    }
-                    
-                    console.log(`✅ Parsed ${data.length} total rows: ${validRows} valid, ${invalidRows} with issues`);
-                    return data;
-                } catch (error) {
-                    console.error('Error parsing CSV data:', error);
-                    return [];
-                }
-            }
-            
-            // Parse benchmark data from CSV
-            function parseBenchmarkData(csvText) {
-                console.log('Parsing benchmark CSV data...');
-                try {
-                    const data = parseCSVData(csvText);
-                    const benchmarks = {};
-                    
-                    data.forEach(row => {
-                        if (row.Week && row.Year) {
-                            const weekKey = `${row.Year}-W${row.Week}`;
-                            benchmarks[weekKey] = row;
-                        }
-                    });
-                    
-                    console.log(`Parsed benchmarks for ${Object.keys(benchmarks).length} weeks`);
-                    return benchmarks;
-                } catch (error) {
-                    console.error('Error parsing benchmark data:', error);
-                    return {};
-                }
-            }
-            
-            // Parse daily CSV data
-            function parseDailyCSVData(csvText) {
-                console.log('Parsing daily CSV data...');
-                try {
-                    const data = parseCSVData(csvText);
-                    const dailyData = {};
-                    
-                    data.forEach(row => {
-                        if (row.Clinic) {
-                            const clinic = row.Clinic.trim();
-                            if (!dailyData[clinic]) {
-                                dailyData[clinic] = [];
-                            }
-                            dailyData[clinic].push(row);
-                        }
-                    });
-                    
-                    console.log(`Parsed daily data for ${Object.keys(dailyData).length} clinics`);
-                    return dailyData;
-                } catch (error) {
-                    console.error('Error parsing daily CSV data:', error);
-                    return {};
-                }
-            }
-            
-            // Parse daily benchmark data
-            function parseDailyBenchmarkData(csvText) {
-                console.log('Parsing daily benchmark CSV data...');
-                try {
-                    const data = parseCSVData(csvText);
-                    const benchmarks = {};
-                    
-                    data.forEach(row => {
-                        if (row.Metric) {
-                            benchmarks[row.Metric] = row;
-                        }
-                    });
-                    
-                    console.log(`Parsed daily benchmarks for ${Object.keys(benchmarks).length} metrics`);
-                    return benchmarks;
-                } catch (error) {
-                    console.error('Error parsing daily benchmark data:', error);
-                    return {};
-                }
-            }
-            
-            // Parse meeting notes CSV data
-            function parseMeetingNotesCSVData(csvText) {
-                console.log('Parsing meeting notes CSV data...');
-                try {
-                    const data = parseCSVData(csvText);
-                    console.log(`Parsed ${data.length} meeting notes entries`);
-                    return data;
-                } catch (error) {
-                    console.error('Error parsing meeting notes CSV data:', error);
-                    return [];
-                }
-            }
-            
-            // Process and store parsed data
-            function processAndStoreData(parsedData) {
-                console.log('Processing and storing parsed data...');
-                try {
-                    // Initialize global data structures
-                    if (!window.allClinicsData) window.allClinicsData = {};
-                    if (!window.availableWeeks) window.availableWeeks = [];
-                    
-                    // Group data by week
-                    const weeklyData = {};
-                    const weeks = new Set();
-                    
-                    parsedData.forEach(row => {
-                        if (row.Week && row.Year) {
-                            const weekKey = `${row.Year}-W${row.Week}`;
-                            if (!weeklyData[weekKey]) {
-                                weeklyData[weekKey] = [];
-                            }
-                            weeklyData[weekKey].push(row);
-                            weeks.add({ year: parseInt(row.Year), week: parseInt(row.Week) });
-                        }
-                    });
-                    
-                    // Store processed data
-                    window.allClinicsData = weeklyData;
-                    window.availableWeeks = Array.from(weeks).sort((a, b) => {
-                        if (a.year !== b.year) return b.year - a.year;
-                        return b.week - a.week;
-                    });
-                    
-                    // Set latest week
-                    if (window.availableWeeks.length > 0) {
-                        window.latestWeek = window.availableWeeks[0];
-                    }
-                    
-                    console.log(`Processed data for ${Object.keys(weeklyData).length} weeks`);
-                } catch (error) {
-                    console.error('Error processing and storing data:', error);
-                }
-            }
-            
-            // Render meeting notes in the UI
-            function renderMeetingNotes() {
-                console.log('Rendering meeting notes...');
-                try {
-                    const container = document.getElementById('meetingNotesContainer');
-                    if (!container) {
-                        console.warn('Meeting notes container not found');
-                        return;
-                    }
-                    
-                    if (!filteredMeetingNotesData || filteredMeetingNotesData.length === 0) {
-                        container.innerHTML = '<div style="text-align:center; padding:20px;">No meeting notes data available.</div>';
-                        return;
-                    }
-                    
-                    let html = '<div class="meeting-notes-list">';
-                    filteredMeetingNotesData.forEach(note => {
-                        html += `
-                            <div class="meeting-note-item" style="border:1px solid #ddd; margin:10px 0; padding:15px; border-radius:5px;">
-                                <div style="font-weight:bold; color:#333;">${note.Clinic || 'Unknown Clinic'}</div>
-                                <div style="color:#666; font-size:0.9em;">${note.Date || ''} - ${note.Metric || ''}</div>
-                                <div style="margin-top:8px;">${note.Notes || 'No notes available'}</div>
-                                <div style="margin-top:5px; font-size:0.8em; color:${note.Done === 'Yes' ? '#28a745' : '#dc3545'};">Status: ${note.Done === 'Yes' ? 'Done' : 'Not Done'}</div>
-                            </div>
-                        `;
-                    });
-                    html += '</div>';
-                    
-                    container.innerHTML = html;
-                    console.log(`Rendered ${filteredMeetingNotesData.length} meeting notes`);
-                } catch (error) {
-                    console.error('Error rendering meeting notes:', error);
-                }
-            }
-            
-            // Initialize main dashboard with weekly data
-            async function initializeDashboard() {
-                console.log('Initializing main dashboard...');
-                try {
-                    showLoading('Loading dashboard data...');
-                    
-                    // Debug: Show what URLs we're trying to access
-                    console.log('🔗 Fetching main data from:', googleSheetDataUrl);
-                    
-                    // Fetch main data from Google Sheets
-                    const response = await fetch(googleSheetDataUrl);
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch data: ${response.status}`);
-                    }
-                    const csvText = await response.text();
-                    console.log('📊 Main data fetched, length:', csvText.length, 'characters');
-                    
-                    // Debug: Show what benchmark URL we're trying to access
-                    console.log('🔗 Fetching benchmark data from:', googleSheetBenchmarkUrl);
-                    
-                    // Fetch benchmark data
-                    const benchmarkResponse = await fetch(googleSheetBenchmarkUrl);
-                    if (!benchmarkResponse.ok) {
-                        throw new Error(`Failed to fetch benchmark data: ${benchmarkResponse.status}`);
-                    }
-                    const benchmarkCsvText = await benchmarkResponse.text();
-                    console.log('📊 Benchmark data fetched, length:', benchmarkCsvText.length, 'characters');
-                    
-                    // Process the data
-                    console.log('Processing weekly data and benchmarks...');
-                    const parsedData = parseCSVData(csvText);
-                    const benchmarkData = parseBenchmarkData(benchmarkCsvText);
-                    
-                    if (parsedData && parsedData.length > 0) {
-                        processAndStoreData(parsedData);
-                        addValidationMessage('success', `Successfully processed ${parsedData.length} weekly data entries.`);
-                    }
-                    
-                    if (benchmarkData && Object.keys(benchmarkData).length > 0) {
-                        addValidationMessage('success', `Successfully processed ${Object.keys(benchmarkData).length} weeks of benchmark data.`);
-                    }
-                    
-                    // Initialize UI components
-                    populateTimePeriodFilter();
-                    populateClinicOptions();
-                    updateLastUpdated();
-                    
-                    addValidationMessage('success', 'Dashboard initialized successfully');
-                    console.log('Main dashboard initialization complete');
-                    
-                } catch (error) {
-                    console.error('Error initializing dashboard:', error);
-                    addValidationMessage('error', 'Failed to initialize dashboard: ' + error.message);
-                    throw error;
-                }
-            }
-            
-            // Load daily data for daily numbers tab
-            async function loadDailyData() {
-                console.log('Loading daily data...');
-                try {
-                    showLoading('Loading daily metrics...');
-                    
-                    // Fetch daily data from Google Sheets
-                    const dailyDataResponse = await fetch(googleSheetDailyDataUrl);
-                    if (!dailyDataResponse.ok) {
-                        throw new Error(`Failed to fetch daily data: ${dailyDataResponse.status}`);
-                    }
-                    const csvDailyDataText = await dailyDataResponse.text();
-                    
-                    // Fetch daily benchmark data
-                    const dailyBenchmarkResponse = await fetch(googleSheetDailyBenchmarkUrl);
-                    if (!dailyBenchmarkResponse.ok) {
-                        throw new Error(`Failed to fetch daily benchmarks: ${dailyBenchmarkResponse.status}`);
-                    }
-                    const csvDailyBenchmarkText = await dailyBenchmarkResponse.text();
-                    
-                    // Process daily data
-                    console.log('Processing daily data and benchmarks...');
-                    const parsedDailyData = parseDailyCSVData(csvDailyDataText);
-                    const dailyBenchmarks = parseDailyBenchmarkData(csvDailyBenchmarkText);
-                    
-                    if (parsedDailyData && Object.keys(parsedDailyData).length > 0) {
-                        allClinicsDailyData = parsedDailyData;
-                        addValidationMessage('success', `Successfully processed daily data for ${Object.keys(parsedDailyData).length} clinics.`);
-                    }
-                    
-                    if (dailyBenchmarks && Object.keys(dailyBenchmarks).length > 0) {
-                        dailyBenchmarkData = dailyBenchmarks;
-                        addValidationMessage('success', `Successfully processed daily benchmarks.`);
-                    }
-                    
-                    // Initialize daily components
-                    renderDailyCurrent();
-                    
-                    addValidationMessage('success', 'Daily data loaded successfully');
-                    console.log('Daily data loading complete');
-                    
-                } catch (error) {
-                    console.error('Error loading daily data:', error);
-                    addValidationMessage('error', 'Failed to load daily data: ' + error.message);
-                    throw error;
-                }
-            }
-            
-            // Load meeting notes data
-            async function loadMeetingNotesData() {
-                console.log('Loading meeting notes data...');
-                try {
-                    showLoading('Loading meeting notes...');
-                    
-                    // Fetch meeting notes data from Google Sheets
-                    const meetingNotesResponse = await fetch(googleSheetMeetingNotesUrl);
-                    if (!meetingNotesResponse.ok) {
-                        throw new Error(`Failed to fetch meeting notes: ${meetingNotesResponse.status}`);
-                    }
-                    const csvMeetingNotesText = await meetingNotesResponse.text();
-                    
-                    // Process meeting notes data
-                    console.log('Processing meeting notes data...');
-                    const parsedMeetingNotes = parseMeetingNotesCSVData(csvMeetingNotesText);
-                    
-                    if (parsedMeetingNotes && parsedMeetingNotes.length > 0) {
-                        allMeetingNotesData = parsedMeetingNotes;
-                        filteredMeetingNotesData = parsedMeetingNotes;
-                        addValidationMessage('success', `Successfully processed ${parsedMeetingNotes.length} meeting notes entries.`);
-                        
-                        // Render meeting notes in the UI
-                        renderMeetingNotes();
-                    } else {
-                        addValidationMessage('warning', 'No meeting notes data found.');
-                    }
-                    
-                    addValidationMessage('success', 'Meeting notes loaded successfully');
-                    console.log('Meeting notes loading complete');
-                    
-                } catch (error) {
-                    console.error('Error loading meeting notes:', error);
-                    addValidationMessage('error', 'Failed to load meeting notes: ' + error.message);
-                    // Don't throw error for meeting notes - it's not critical
-                }
-            }
-            
             // Initial setup function called after Google Charts loads
             async function setupDashboard() {
                 console.log("Dashboard setup initiated.");
+                initializeDatePickers();
+                initializeDailyRangePicker();
+                populateMetricSelector();
                 
-                try {
-                    initializeDatePickers();
-                    initializeDailyRangePicker();
-                    populateMetricSelector();
-                    
-                    if (googleSheetDataUrl && googleSheetBenchmarkUrl) {
-                        console.log(`Attempting to autoload data from: ${googleSheetDataUrl}`);
-                        console.log(`Attempting to autoload benchmarks from: ${googleSheetBenchmarkUrl}`);
-                        
-                        // Load all data in parallel
-                        await Promise.all([initializeDashboard(), loadDailyData(), loadMeetingNotesData()]);
-                        
-                        // Dashboard setup complete - hide loading and enable controls
-                        hideLoading();
-                        enableControls();
-                        displayValidationMessages();
-                        
-                        console.log("Dashboard setup completed successfully!");
-                        addValidationMessage('success', 'Dashboard loaded successfully');
-                        
-                    } else {
-                        addValidationMessage('error', "Configuration Error: Data or Benchmark Google Sheet URL is not configured in the script.");
-                        displayValidationMessages();
-                        hideLoading("Configuration Error");
-                        disableControls();
-                    }
-                    
-                } catch (error) {
-                    console.error('Dashboard setup failed:', error);
-                    addValidationMessage('error', 'Dashboard setup failed: ' + error.message);
-                    hideLoading('Setup failed: ' + error.message);
-                    disableControls();
+                if (googleSheetDataUrl && googleSheetBenchmarkUrl) {
+                     console.log(`Attempting to autoload data from: ${googleSheetDataUrl}`);
+                     console.log(`Attempting to autoload benchmarks from: ${googleSheetBenchmarkUrl}`);
+                     await Promise.all([initializeDashboard(), loadDailyData()]); // load weekly and daily data in parallel
+                } else {
+                     addValidationMessage('error', "Configuration Error: Data or Benchmark Google Sheet URL is not configured in the script.");
+                     displayValidationMessages();
+                     hideLoading("Configuration Error");
+                     disableControls();
                 }
             }
             
@@ -2210,6 +1135,7 @@
         document.querySelectorAll('.view-toggle button').forEach(b=>b.disabled=false);
         document.querySelectorAll('#comparisonTab button, #comparisonTab select').forEach(el=>el.disabled=false);
                     // displayValidationMessages(); // Validation messages hidden on success
+                    initializeMeetingNotesTab();
                     hideLoading();
     
                 } catch (error) {
@@ -2883,70 +1809,10 @@
                     targetDisplay = targetDisplay.trim().slice(0,-1); // remove trailing % if present
                 }
                 const targetText = (targetDisplay===null||targetDisplay===undefined||targetDisplay==='') ? 'Target: N/A' : `Target: ${targetDisplay}`;
-                
                 // Get trend indicator for the metric (if available)
-                const trend = row[metricId + 'Trend'] || '';
-                const arrow = getTrendArrow(trend);
-                
-                // Determine trend direction if trend is not available
-                let trendArrow = arrow || '';
-                if (!trendArrow && displayValue !== 'N/A' && targetDisplay !== 'N/A') {
-                    const numValue = parseFloat(displayValue);
-                    const numTarget = parseFloat(targetDisplay);
-                    if (!isNaN(numValue) && !isNaN(numTarget)) {
-                        // Add arrow based on comparison to target
-                        const higherIsBetter = !(metricId === 'cancellation' || metricId === 'noShow' || metricId === 'noUpcoming');
-                        if (higherIsBetter) {
-                            trendArrow = numValue >= numTarget ? '▲' : '▼';
-                    startDate=sRaw.trim();
-                    endDate=eRaw.trim();
-                }
-                if(startDate && endDate){
-                    dates = dates.filter(d=> d>=startDate && d<=endDate);
-                } else {
-                    // default to last 7 days
-                    dates = dates.slice(-7);
-                }
-                // header row
-                let headerRow='<tr><th>Clinic</th><th>Overall Alert</th>';
-                dates.forEach(d=>{headerRow+=`<th class="pivot-date">${moment(d).format('MMM D, YYYY')}</th>`;});
-                headerRow+='</tr>';
-                thead.innerHTML=headerRow;
-                // clinics rows
-                const clinics=Object.keys(allClinicsDailyData).sort((a,b)=>a.localeCompare(b));
-                clinics.forEach(clinic=>{
-                    let rowHtml=`<tr><td class="clinic-name">${clinic}</td>`;
-                    let achievedSum=0, targetSum=0, higherIsBetter=true;
-                    let dateCells='';
-                    dates.forEach(d=>{
-                        const rec=allClinicsDailyData[clinic].find(r=>r.Date===d);
-                        if(rec){
-                            dateCells+= generateDailyMetricCell(rec, metricId);
-                            const benchRow = dailyBenchmarkData[rec.Date+'|'+rec.Clinic] || latestDailyBenchmarkByClinic[rec.Clinic] || {};
-                            const benchVal = benchRow[metricHeader];
-                            const benchNumeric = toNumeric(benchVal);
-                            const achievedNumeric = toNumeric(rec[metricHeader]);
-                            if(benchNumeric!==null && achievedNumeric!==null){
-                                targetSum += benchNumeric;
-                                achievedSum += achievedNumeric;
-                            }
-                            const hFlag = benchRow[metricHeader+'_HigherIsBetter'];
-                            if(hFlag!==undefined&&hFlag!==null) higherIsBetter = (hFlag.toString().toLowerCase()==='true');
-                        } else {
-                            dateCells+='<td>N/A</td>';
-                        }
-                    });
-                    let overall='low';
-                    if(targetSum>0){
-                        overall = getAlertLevel(achievedSum, targetSum, higherIsBetter, metricId);
-                    }
-                    rowHtml+=`<td><span class=\"alert-badge alert-${overall}\">${overall.toUpperCase()}</span></td>`+dateCells+'</tr>';
-                    tbody.innerHTML+=rowHtml;
-                });
-            }
-            function renderDailyPivot(){
-                const metricId = document.getElementById('dailyMetricSelector').value || 'targetVisits';
-                const metricToColumn = { targetVisits:'Target of Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target', noUpcoming:'No Upcoming %', cancellation:'Cancellation %', noShow:'No Show %', utilization:'Utilization %', satisfactionCollect:'Satisfaction Collection %' };
+    const trend = row[metricId + 'Trend'] || '';
+    const arrow = getTrendArrow(trend);
+    let arrowSpan = '';
                 const metricHeader = metricToColumn[metricId];
                 const tbody=document.getElementById('dailyTableBody');
                 const thead=document.getElementById('dailyTableHead');
@@ -3011,13 +1877,8 @@
                     tbody.innerHTML+=rowHtml;
                 });
             }
-            // Compatibility wrapper for legacy calls
-            function renderDailyCurrent(){
-                renderDailyPivot();
-            }
     // OLD renderDailyCurrent removed for pivot
-    /*
-                const selectedDateRaw = document.getElementById('dateFilter')?.value;
+                /* const selectedDateRaw = document.getElementById('dateFilter')?.value;
                 const selectedDate = selectedDateRaw ? moment(selectedDateRaw, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY']).format('YYYY-MM-DD') : '';
     
                 const tbody = document.getElementById('dailyTableBody');
@@ -3069,20 +1930,18 @@
                             ${generateDailyMetricCell(r,'googleReviews')}`;
                         tbody.appendChild(tr);
                     });
-                    let overall='low';
-                    if(targetSum>0){
-                        overall = getAlertLevel(achievedSum, targetSum, higherIsBetter, metricId);
-                    }
-                    rowHtml+=`<td><span class=\"alert-badge alert-${overall}\">${overall.toUpperCase()}</span></td>`+dateCells+'</tr>';
-                    tbody.innerHTML+=rowHtml;
                 });
-            
+            }
+    // --- end of updated renderDailyPivot ---
+    */
             // Compatibility wrapper for legacy calls
             function renderDailyCurrent(){
                 renderDailyPivot();
             }
     
     
+    
+                /* duplicate obsolete block removed
     // if(!body) return;
                 // Build table header if empty
                 if(body.innerHTML===''){
@@ -4451,71 +3310,27 @@ function generateMetricCell(entry, metricId){
 
     return `<td class="metric-value">
                 <div>${display} ${arrowSpan}</div>
-                <div class="target-deviation">${targetText}</div>
-              </td>`;
+                <span class="alert-badge alert-${alertLevel}">${alertLevel.toUpperCase()}</span>
+                <div class="deviation">${targetText}</div>
+            </td>`;
 }
 
+// Generate cell for daily pivot table (if needed)
 function generateDailyMetricCell(row, metricId){
     const metricMap = { targetVisits:'Target of Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target', noUpcoming:'No Upcoming %', cancellation:'Cancellation %', noShow:'No Show %', utilization:'Utilization %', satisfactionCollect:'Satisfaction Collection %' };
     const header = metricMap[metricId] || metricId;
     const val = row[header];
     const display = (val===null||val===undefined||val==='') ? 'N/A' : val;
     const alert = row[metricId+'Alert']||'normal';
-
-    // Get benchmark/target value
-    const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic] || latestDailyBenchmarkByClinic[row.Clinic] || {};
-    let targetVal;
-    switch(metricId){
-        case 'targetVisits': targetVal = bench['Target of Visits'] ?? bench['TargetVisits']; break;
-        case 'googleReviews': targetVal = bench['Google Reviews'] ?? bench['GoogleReviews']; break;
-        case 'newPatients': targetVal = bench['New Patients Target']; break;
-        case 'noUpcoming': targetVal = bench['No Upcoming %']; break;
-        case 'cancellation': targetVal = bench['Cancellation %']; break;
-        case 'noShow': targetVal = bench['No Show %']; break;
-        case 'utilization': targetVal = bench['Utilization %']; break;
-        case 'satisfactionCollect': targetVal = bench['Satisfaction Collection %']; break;
-        case 'patientWaitTime': targetVal = bench['Patient Wait Time']; break;
-        case 'staffProductivity': targetVal = bench['Staff Productivity']; break;
-        case 'patientSatisfaction': targetVal = bench['Patient Satisfaction']; break;
-        case 'revenueGrowth': targetVal = bench['Revenue Growth']; break;
-        default: targetVal = bench[header]; break;
-    }
-    
-    // Format target for display
-    let targetDisplay = targetVal;
-    if(typeof targetDisplay === 'string' && targetDisplay.trim().endsWith('%')){
-        targetDisplay = targetDisplay.trim().slice(0,-1); // remove trailing % if present
-    }
-    const targetText = (targetDisplay===null||targetDisplay===undefined||targetDisplay==='') ? 'Target: N/A' : `Target: ${targetDisplay}`;
-    
-    // Get trend indicator for the metric
-    const trend = row[metricId + 'Trend'] || '';
-    const arrow = getTrendArrow(trend);
-    
-    // Determine trend direction if trend is not available
-    let trendArrow = arrow || '';
-    if (!trendArrow && display !== 'N/A' && targetDisplay !== 'N/A') {
-        const numValue = parseFloat(display);
-        const numTarget = parseFloat(targetDisplay);
-        if (!isNaN(numValue) && !isNaN(numTarget)) {
-            // Add arrow based on comparison to target
-            const higherIsBetter = !(metricId === 'cancellation' || metricId === 'noShow' || metricId === 'noUpcoming');
-            if (higherIsBetter) {
-                trendArrow = numValue >= numTarget ? '▲' : '▼';
-            } else {
-                trendArrow = numValue <= numTarget ? '▲' : '▼';
-            }
-        }
-    }
-    
-    // Return the cell with all elements: value, alert badge with text, target text, and trend arrow
-    return `<td class="metric-value">
-            ${display}
-            <span class="alert-badge alert-${alert}">${alert.toUpperCase()}</span>
-            <div class="deviation">${targetText} ${trendArrow}</div>
-           </td>`;
+    return `<td class="metric-value"><span class="alert-badge alert-${alert}">${display}</span></td>`;
 }
-
+    
+            // Show loading overlay
+            function showLoading(message = "Loading...") {
+                document.getElementById('loadingMessage').textContent = message;
+                document.getElementById('loadingOverlay').style.display = 'flex';
+            }
+    
             // Hide loading overlay
             function hideLoading(message = null) {
                  const overlay = document.getElementById('loadingOverlay');
@@ -4572,12 +3387,381 @@ function generateDailyMetricCell(row, metricId){
                 link.setAttribute("download", `clinic_metrics_export_W${weekInfo.week}_${weekInfo.year}.csv`);
                 document.body.appendChild(link); // Required for Firefox
                 link.click();
-                document.body.removeChild(link);
+       
+    function showTab(tabId) {
+        // Hide all tabs
+        const tabs = document.querySelectorAll('.tab-content');
+        tabs.forEach(tab => tab.style.display = 'none');
+        
+        // Show the selected tab
+        document.getElementById(tabId).style.display = 'block';
+        
+        // Update active tab button
+        const tabButtons = document.querySelectorAll('.tab-button');
+        tabButtons.forEach(button => button.classList.remove('active'));
+        
+        // Find and activate the clicked button
+        tabButtons.forEach(button => {
+            if (button.getAttribute('onclick').includes(tabId)) {
+                button.classList.add('active');
+            }
+        });
+    }
+    
+    // Meeting Notes Google Sheet URL
+    const meetingNotesSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeN0UumxiDN3Qp5H8J0bKZOvkMgRBvNe-G8KYja32gNGE_Rws90BGR4EShDrpXoqWiuZpnfaKmrAzN/pub?gid=1857583669&single=true&output=csv';
+             document.body.removeChild(link);
                 hideLoading();
                 console.log("Export complete.");
             }
-        } // Added missing closing brace
-    } 
-    </script>
-    </body>
+    
+        
+    // Meeting Notes Functionality
+    let meetingNotesData = [];
+    
+    async function fetchMeetingNotesData() {
+        try {
+            // Replace with your actual Google Sheet URL
+            const response = await fetch(meetingNotesSheetUrl);
+            if (!response.ok) {
+                throw new Error('Failed to fetch meeting notes data');
+            }
+            
+            const csvText = await response.text();
+            return parseMeetingNotesCSV(csvText);
+        } catch (error) {
+            console.error("Error fetching meeting notes data:", error);
+            return [];
+        }
+    }
+    
+    function parseMeetingNotesCSV(csvText) {
+        // Simple CSV parsing
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',');
+        
+        return lines.slice(1).map(line => {
+            const values = line.split(',');
+            const entry = {};
+            
+            headers.forEach((header, index) => {
+                entry[header.trim()] = values[index]?.trim() || '';
+            });
+            
+            return entry;
+        });
+    }
+    
+    function populateMeetingNotesFilters() {
+        // Populate clinic filter
+        const clinicSelect = document.getElementById('meetingClinicFilter');
+        const clinics = [...new Set(meetingNotesData.map(note => note.Clinic))];
+        
+        clinicSelect.innerHTML = '<option value="all">All Clinics</option>';
+        clinics.forEach(clinic => {
+            if (clinic) {
+                const option = document.createElement('option');
+                option.value = clinic;
+                option.textContent = clinic;
+                clinicSelect.appendChild(option);
+            }
+        });
+        
+        // Populate metric filter
+        const metricSelect = document.getElementById('meetingMetricFilter');
+        const metrics = [...new Set(meetingNotesData.map(note => note.Metric))];
+        
+        metricSelect.innerHTML = '<option value="all">All Metrics</option>';
+        metrics.forEach(metric => {
+            if (metric) {
+                const option = document.createElement('option');
+                option.value = metric;
+                option.textContent = metric;
+                metricSelect.appendChild(option);
+            }
+        });
+        
+        // Initialize date picker
+        $('#meetingDateFilter').daterangepicker({
+            startDate: moment().subtract(30, 'days'),
+            endDate: moment(),
+            opens: 'left',
+            ranges: {
+               'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+               'This Month': [moment().startOf('month'), moment().endOf('month')],
+               'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+               'Last 3 Months': [moment().subtract(3, 'month'), moment()]
+            }
+        });
+    }
+    
+    function displayMeetingNotes() {
+        const container = document.getElementById('meetingNotesContainer');
+        container.innerHTML = '';
+        
+        // Get filter values
+        const dateRange = $('#meetingDateFilter').data('daterangepicker');
+        const startDate = dateRange.startDate.format('YYYY-MM-DD');
+        const endDate = dateRange.endDate.format('YYYY-MM-DD');
+        
+        const clinicFilter = document.getElementById('meetingClinicFilter').value;
+        const metricFilter = document.getElementById('meetingMetricFilter').value;
+        const statusFilter = document.getElementById('meetingStatusFilter').value;
+        
+        // Filter the data
+        const filteredData = meetingNotesData.filter(note => {
+            const meetingDate = note['Date of meeting'];
+            const isDone = note.Done === 'TRUE' || note.Done === true || note.Done === '✓';
+            
+            // Date filter
+            const isInDateRange = moment(meetingDate).isBetween(startDate, endDate, null, '[]');
+            
+            // Clinic filter
+            const matchesClinic = clinicFilter === 'all' || note.Clinic === clinicFilter;
+            
+            // Metric filter
+            const matchesMetric = metricFilter === 'all' || note.Metric === metricFilter;
+            
+            // Status filter
+            const matchesStatus = statusFilter === 'all' || 
+                                  (statusFilter === 'done' && isDone) || 
+                                  (statusFilter === 'not-done' && !isDone);
+            
+            return isInDateRange && matchesClinic && matchesMetric && matchesStatus;
+        });
+        
+        // Group by meeting date
+        const meetingsByDate = {};
+        filteredData.forEach(note => {
+            if (!meetingsByDate[note['Date of meeting']]) {
+                meetingsByDate[note['Date of meeting']] = [];
+            }
+            meetingsByDate[note['Date of meeting']].push(note);
+        });
+        
+        // Sort dates in reverse chronological order
+        const sortedDates = Object.keys(meetingsByDate).sort((a, b) => {
+            return moment(b, 'MM-DD-YYYY').valueOf() - moment(a, 'MM-DD-YYYY').valueOf();
+        });
+        
+        if (sortedDates.length === 0) {
+            container.innerHTML = '<p>No meeting notes found matching the filters.</p>';
+            return;
+        }
+        
+        // Create a box for each meeting date
+        sortedDates.forEach(date => {
+            const formattedDate = moment(date, 'MM-DD-YYYY').format('MM-DD-YYYY');
+            const meetingBox = document.createElement('div');
+            meetingBox.className = 'meeting-box';
+            
+            const meetingHeader = document.createElement('h3');
+            meetingHeader.textContent = 'Date of meeting: ' + formattedDate;
+            meetingBox.appendChild(meetingHeader);
+            
+            const checklist = document.createElement('ul');
+            checklist.className = 'meeting-checklist';
+            
+            meetingsByDate[date].forEach(item => {
+                const listItem = document.createElement('li');
+                const isDone = item.Done === 'TRUE' || item.Done === true || item.Done === '✓';
+                
+                if (isDone) {
+                    listItem.classList.add('meeting-item-done');
+                }
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = isDone;
+                checkbox.disabled = true; // Read-only checkboxes
+                listItem.appendChild(checkbox);
+                
+                const itemContent = document.createElement('div');
+                
+                const clinic = document.createElement('div');
+                clinic.className = 'meeting-clinic';
+                clinic.textContent = item.Clinic;
+                itemContent.appendChild(clinic);
+                
+                const metric = document.createElement('div');
+                metric.className = 'meeting-metric';
+                metric.textContent = item.Metric;
+                itemContent.appendChild(metric);
+                
+                const notes = document.createElement('div');
+                notes.className = 'meeting-notes';
+                notes.textContent = item.Notes;
+                itemContent.appendChild(notes);
+                
+                listItem.appendChild(itemContent);
+                checklist.appendChild(listItem);
+            });
+            
+            meetingBox.appendChild(checklist);
+            container.appendChild(meetingBox);
+        });
+    }
+    
+    // URL of the Meeting Notes Google Sheet published as CSV
+    const googleSheetMeetingNotesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTBp1rqPNc_3K9d8WKg5ynUMUXxCPTM5LTNRB3FgqK8uYreZ63EVZC9C6RiEqKHiwpzqZ38bEoWIpWi/pub?gid=1033388301&single=true&output=csv';
+    
+    // Function to fetch meeting notes data from Google Sheet
+    async function fetchMeetingNotesData() {
+        console.log("Fetching meeting notes data from sheet:", googleSheetMeetingNotesUrl);
+        
+        try {
+            const response = await fetch(googleSheetMeetingNotesUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch meeting notes: ${response.status} ${response.statusText}`);
+            }
+            
+            const csvText = await response.text();
+            return parseMeetingNotesCSV(csvText);
+        } catch (error) {
+            console.error("Error fetching meeting notes data:", error);
+            throw error;
+        }
+    }
+    
+    // Function to parse meeting notes CSV data
+    function parseMeetingNotesCSV(csvText) {
+        console.log("Parsing meeting notes CSV data");
+        
+        // Split into lines and get headers
+        const lines = csvText.split('\n');
+        if (lines.length <= 1) {
+            console.error("No valid data in meeting notes CSV");
+            return [];
+        }
+        
+        const headers = lines[0].split(',').map(header => header.trim());
+        
+        // Check for required headers
+        const requiredHeaders = ['Date of meeting', 'Done', 'Clinic', 'Metric', 'Notes'];
+        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+        
+        if (missingHeaders.length > 0) {
+            console.error(`Missing required headers in meeting notes CSV: ${missingHeaders.join(', ')}`);
+            return [];
+        }
+        
+        // Parse data rows
+        const data = [];
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue; // Skip empty lines
+            
+            // Handle quoted fields with commas inside them
+            const row = parseCSVRow(lines[i]);
+            
+            if (row.length !== headers.length) {
+                console.warn(`Skipping row ${i+1}: incorrect number of fields`);
+                continue;
+            }
+            
+            const item = {};
+            headers.forEach((header, index) => {
+                item[header] = row[index];
+            });
+            
+            data.push(item);
+        }
+        
+        console.log(`Parsed ${data.length} meeting note items`);
+        return data;
+    }
+    
+    // Helper function to properly parse CSV rows with quoted fields
+    function parseCSVRow(row) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < row.length; i++) {
+            const char = row[i];
+            
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        result.push(current.trim());
+        return result;
+    }
+    
+    async function initializeMeetingNotesTab() {
+        console.log("Initializing Meeting Notes tab...");
+        
+        try {
+            // Fetch meeting notes data
+            meetingNotesData = await fetchMeetingNotesData();
+            
+            // Setup filters
+            populateMeetingNotesFilters();
+            
+            // Display meeting notes
+            displayMeetingNotes();
+            
+            // Add event listener to the Apply Filters button
+            document.getElementById('applyMeetingFilters').addEventListener('click', displayMeetingNotes);
+            
+            console.log("Meeting Notes tab initialized successfully");
+        } catch (error) {
+            console.error("Error initializing Meeting Notes tab:", error);
+            document.getElementById('meetingNotesContainer').innerHTML = 
+                '<p class="error">Failed to load meeting notes. Please try refreshing the page.</p>';
+        }
+    }
+    
+    // Initialize Meeting Notes tab when dashboard loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // This will be added to the existing initialization code
+        // For now we'll just call it here for testing
+        setTimeout(initializeMeetingNotesTab, 1000);
+    });
+</script>
+    
+    <!-- Meeting Notes Tab -->
+    <div id="meetingNotesTab" class="tab-content">
+        <h2>Meeting Notes</h2>
+        <div class="controls">
+            <div class="filter-group">
+                <label for="meetingDateFilter">Date Range:</label>
+                <input type="text" id="meetingDateFilter" class="date-range-picker">
+            </div>
+            <div class="filter-group">
+                <label for="meetingClinicFilter">Clinic:</label>
+                <select id="meetingClinicFilter">
+                    <option value="all">All Clinics</option>
+                    <!-- Will be populated dynamically -->
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="meetingMetricFilter">Metric:</label>
+                <select id="meetingMetricFilter">
+                    <option value="all">All Metrics</option>
+                    <!-- Will be populated dynamically -->
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="meetingStatusFilter">Status:</label>
+                <select id="meetingStatusFilter">
+                    <option value="all">All</option>
+                    <option value="done">Done</option>
+                    <option value="not-done">Not Done</option>
+                </select>
+            </div>
+            <button id="applyMeetingFilters" class="action-button">Apply Filters</button>
+        </div>
+        <div id="meetingNotesContainer" class="meeting-notes-container">
+            <!-- Meeting notes will be populated here -->
+            <div class="loading-indicator">Loading meeting notes...</div>
+        </div>
+    </div>
+</body>
     </html>
+    
