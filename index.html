@@ -1300,6 +1300,151 @@
                 return 'neutral';
             }
             
+            // Generate alert badge HTML for table cells
+            function generateAlertBadge(alertLevel) {
+                if (!alertLevel || alertLevel === 'undefined' || alertLevel === 'null') {
+                    alertLevel = 'normal';
+                }
+                
+                const level = alertLevel.toLowerCase();
+                let badgeClass = 'alert-badge';
+                let badgeText = alertLevel;
+                
+                // Map alert levels to CSS classes and display text
+                switch (level) {
+                    case 'critical':
+                        badgeClass += ' alert-critical';
+                        badgeText = 'Critical';
+                        break;
+                    case 'high':
+                        badgeClass += ' alert-high';
+                        badgeText = 'High';
+                        break;
+                    case 'medium':
+                        badgeClass += ' alert-medium';
+                        badgeText = 'Medium';
+                        break;
+                    case 'low':
+                        badgeClass += ' alert-low';
+                        badgeText = 'Low';
+                        break;
+                    case 'slight':
+                        badgeClass += ' alert-slight';
+                        badgeText = 'Slight';
+                        break;
+                    case 'normal':
+                    case 'good':
+                        badgeClass += ' alert-good';
+                        badgeText = 'Normal';
+                        break;
+                    case 'warning':
+                        badgeClass += ' alert-warning';
+                        badgeText = 'Warning';
+                        break;
+                    case 'bad':
+                        badgeClass += ' alert-bad';
+                        badgeText = 'Bad';
+                        break;
+                    default:
+                        badgeClass += ' alert-neutral';
+                        badgeText = 'Normal';
+                        break;
+                }
+                
+                return `<span class="${badgeClass}">${badgeText}</span>`;
+            }
+            
+            // Generate metric cell HTML with value, benchmark, and alert styling
+            function generateMetricCell(value, benchmark, higherIsBetter = true) {
+                if (value === null || value === undefined) {
+                    return '<span style="color:#999;">N/A</span>';
+                }
+                
+                const numValue = parseFloat(value);
+                if (isNaN(numValue)) {
+                    return `<span style="color:#999;">${value}</span>`;
+                }
+                
+                let cellContent = `<div style="font-weight:bold;">${numValue.toFixed(1)}%</div>`;
+                
+                if (benchmark !== null && benchmark !== undefined) {
+                    const numBenchmark = parseFloat(benchmark);
+                    if (!isNaN(numBenchmark)) {
+                        const alertLevel = getAlertLevel(numValue, numBenchmark, higherIsBetter);
+                        const alertBadge = generateAlertBadge(alertLevel);
+                        const trend = numValue > numBenchmark ? '↑' : numValue < numBenchmark ? '↓' : '→';
+                        
+                        cellContent += `<div style="font-size:0.8em; margin-top:4px;">`;
+                        cellContent += `${alertBadge}`;
+                        cellContent += `<div style="color:#666; margin-top:2px;">Target: ${numBenchmark.toFixed(1)}%</div>`;
+                        cellContent += `<div style="font-size:1.2em; margin-top:2px;">${trend}</div>`;
+                        cellContent += `</div>`;
+                    }
+                }
+                
+                return cellContent;
+            }
+            
+            // Calculate overall score for a clinic
+            function calculateOverallScore(clinic) {
+                // Simple scoring logic - count metrics that meet or exceed benchmarks
+                let score = 0;
+                let totalMetrics = 0;
+                
+                const metrics = [
+                    { value: clinic.newPatients, benchmark: clinic.newPatientsBenchmark, higherIsBetter: true },
+                    { value: clinic.visitsTarget, benchmark: clinic.visitsTargetBenchmark, higherIsBetter: true },
+                    { value: clinic.retention2nd, benchmark: clinic.retention2ndBenchmark, higherIsBetter: true },
+                    { value: clinic.retention5th, benchmark: clinic.retention5thBenchmark, higherIsBetter: true },
+                    { value: clinic.cancel, benchmark: clinic.cancelBenchmark, higherIsBetter: false },
+                    { value: clinic.noShow, benchmark: clinic.noShowBenchmark, higherIsBetter: false }
+                ];
+                
+                metrics.forEach(metric => {
+                    if (metric.value !== null && metric.value !== undefined && 
+                        metric.benchmark !== null && metric.benchmark !== undefined) {
+                        totalMetrics++;
+                        const alertLevel = getAlertLevel(metric.value, metric.benchmark, metric.higherIsBetter);
+                        if (alertLevel === 'good') score++;
+                    }
+                });
+                
+                if (totalMetrics === 0) return '<span style="color:#999;">N/A</span>';
+                
+                const percentage = (score / totalMetrics) * 100;
+                const alertLevel = percentage >= 80 ? 'good' : percentage >= 60 ? 'warning' : 'bad';
+                const badge = generateAlertBadge(alertLevel);
+                
+                return `<div><strong>${percentage.toFixed(0)}%</strong><br>${badge}</div>`;
+            }
+            
+            // Generate trend indicator
+            function generateTrendIndicator(trend) {
+                const trendLower = (trend || 'stable').toLowerCase();
+                let arrow = '→';
+                let color = '#666';
+                
+                switch (trendLower) {
+                    case 'up':
+                    case 'improving':
+                        arrow = '↑';
+                        color = '#28a745';
+                        break;
+                    case 'down':
+                    case 'declining':
+                        arrow = '↓';
+                        color = '#dc3545';
+                        break;
+                    case 'stable':
+                    default:
+                        arrow = '→';
+                        color = '#666';
+                        break;
+                }
+                
+                return `<span style="color:${color}; font-size:1.5em;">${arrow}</span>`;
+            }
+            
             // Add validation message
             function addValidationMessage(type, message) {
                 console.log(`Validation [${type}]:`, message);
