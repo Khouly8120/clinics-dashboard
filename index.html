@@ -1404,9 +1404,200 @@
             // Get data for a specific week
             function getDataForWeek(year, week) {
                 console.log(`Getting data for week ${week}, year ${year}`);
-                // This would return data for a specific week
-                // For now, return empty array to prevent errors
+                if (availableWeeks && availableWeeks.length > 0) {
+                    const weekKey = `${year}-W${week}`;
+                    return allClinicsData[weekKey] || [];
+                }
                 return [];
+            }
+            
+            // Parse CSV data from Google Sheets
+            function parseCSVData(csvText) {
+                console.log('Parsing CSV data...');
+                try {
+                    const lines = csvText.trim().split('\n');
+                    if (lines.length < 2) {
+                        console.warn('CSV data has insufficient rows');
+                        return [];
+                    }
+                    
+                    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                    const data = [];
+                    
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                        if (values.length >= headers.length) {
+                            const row = {};
+                            headers.forEach((header, index) => {
+                                row[header] = values[index] || '';
+                            });
+                            data.push(row);
+                        }
+                    }
+                    
+                    console.log(`Parsed ${data.length} rows of CSV data`);
+                    return data;
+                } catch (error) {
+                    console.error('Error parsing CSV data:', error);
+                    return [];
+                }
+            }
+            
+            // Parse benchmark data from CSV
+            function parseBenchmarkData(csvText) {
+                console.log('Parsing benchmark CSV data...');
+                try {
+                    const data = parseCSVData(csvText);
+                    const benchmarks = {};
+                    
+                    data.forEach(row => {
+                        if (row.Week && row.Year) {
+                            const weekKey = `${row.Year}-W${row.Week}`;
+                            benchmarks[weekKey] = row;
+                        }
+                    });
+                    
+                    console.log(`Parsed benchmarks for ${Object.keys(benchmarks).length} weeks`);
+                    return benchmarks;
+                } catch (error) {
+                    console.error('Error parsing benchmark data:', error);
+                    return {};
+                }
+            }
+            
+            // Parse daily CSV data
+            function parseDailyCSVData(csvText) {
+                console.log('Parsing daily CSV data...');
+                try {
+                    const data = parseCSVData(csvText);
+                    const dailyData = {};
+                    
+                    data.forEach(row => {
+                        if (row.Clinic) {
+                            const clinic = row.Clinic.trim();
+                            if (!dailyData[clinic]) {
+                                dailyData[clinic] = [];
+                            }
+                            dailyData[clinic].push(row);
+                        }
+                    });
+                    
+                    console.log(`Parsed daily data for ${Object.keys(dailyData).length} clinics`);
+                    return dailyData;
+                } catch (error) {
+                    console.error('Error parsing daily CSV data:', error);
+                    return {};
+                }
+            }
+            
+            // Parse daily benchmark data
+            function parseDailyBenchmarkData(csvText) {
+                console.log('Parsing daily benchmark CSV data...');
+                try {
+                    const data = parseCSVData(csvText);
+                    const benchmarks = {};
+                    
+                    data.forEach(row => {
+                        if (row.Metric) {
+                            benchmarks[row.Metric] = row;
+                        }
+                    });
+                    
+                    console.log(`Parsed daily benchmarks for ${Object.keys(benchmarks).length} metrics`);
+                    return benchmarks;
+                } catch (error) {
+                    console.error('Error parsing daily benchmark data:', error);
+                    return {};
+                }
+            }
+            
+            // Parse meeting notes CSV data
+            function parseMeetingNotesCSVData(csvText) {
+                console.log('Parsing meeting notes CSV data...');
+                try {
+                    const data = parseCSVData(csvText);
+                    console.log(`Parsed ${data.length} meeting notes entries`);
+                    return data;
+                } catch (error) {
+                    console.error('Error parsing meeting notes CSV data:', error);
+                    return [];
+                }
+            }
+            
+            // Process and store parsed data
+            function processAndStoreData(parsedData) {
+                console.log('Processing and storing parsed data...');
+                try {
+                    // Initialize global data structures
+                    if (!window.allClinicsData) window.allClinicsData = {};
+                    if (!window.availableWeeks) window.availableWeeks = [];
+                    
+                    // Group data by week
+                    const weeklyData = {};
+                    const weeks = new Set();
+                    
+                    parsedData.forEach(row => {
+                        if (row.Week && row.Year) {
+                            const weekKey = `${row.Year}-W${row.Week}`;
+                            if (!weeklyData[weekKey]) {
+                                weeklyData[weekKey] = [];
+                            }
+                            weeklyData[weekKey].push(row);
+                            weeks.add({ year: parseInt(row.Year), week: parseInt(row.Week) });
+                        }
+                    });
+                    
+                    // Store processed data
+                    window.allClinicsData = weeklyData;
+                    window.availableWeeks = Array.from(weeks).sort((a, b) => {
+                        if (a.year !== b.year) return b.year - a.year;
+                        return b.week - a.week;
+                    });
+                    
+                    // Set latest week
+                    if (window.availableWeeks.length > 0) {
+                        window.latestWeek = window.availableWeeks[0];
+                    }
+                    
+                    console.log(`Processed data for ${Object.keys(weeklyData).length} weeks`);
+                } catch (error) {
+                    console.error('Error processing and storing data:', error);
+                }
+            }
+            
+            // Render meeting notes in the UI
+            function renderMeetingNotes() {
+                console.log('Rendering meeting notes...');
+                try {
+                    const container = document.getElementById('meetingNotesContainer');
+                    if (!container) {
+                        console.warn('Meeting notes container not found');
+                        return;
+                    }
+                    
+                    if (!filteredMeetingNotesData || filteredMeetingNotesData.length === 0) {
+                        container.innerHTML = '<div style="text-align:center; padding:20px;">No meeting notes data available.</div>';
+                        return;
+                    }
+                    
+                    let html = '<div class="meeting-notes-list">';
+                    filteredMeetingNotesData.forEach(note => {
+                        html += `
+                            <div class="meeting-note-item" style="border:1px solid #ddd; margin:10px 0; padding:15px; border-radius:5px;">
+                                <div style="font-weight:bold; color:#333;">${note.Clinic || 'Unknown Clinic'}</div>
+                                <div style="color:#666; font-size:0.9em;">${note.Date || ''} - ${note.Metric || ''}</div>
+                                <div style="margin-top:8px;">${note.Notes || 'No notes available'}</div>
+                                <div style="margin-top:5px; font-size:0.8em; color:${note.Done === 'Yes' ? '#28a745' : '#dc3545'};">Status: ${note.Done === 'Yes' ? 'Done' : 'Not Done'}</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    
+                    container.innerHTML = html;
+                    console.log(`Rendered ${filteredMeetingNotesData.length} meeting notes`);
+                } catch (error) {
+                    console.error('Error rendering meeting notes:', error);
+                }
             }
             
             // Initialize main dashboard with weekly data
@@ -1415,10 +1606,35 @@
                 try {
                     showLoading('Loading weekly data...');
                     
-                    // Simulate data loading process
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Fetch weekly data from Google Sheets
+                    const dataResponse = await fetch(googleSheetDataUrl);
+                    if (!dataResponse.ok) {
+                        throw new Error(`Failed to fetch data: ${dataResponse.status}`);
+                    }
+                    const csvDataText = await dataResponse.text();
                     
-                    // Initialize basic dashboard components
+                    // Fetch benchmark data
+                    const benchmarkResponse = await fetch(googleSheetBenchmarkUrl);
+                    if (!benchmarkResponse.ok) {
+                        throw new Error(`Failed to fetch benchmarks: ${benchmarkResponse.status}`);
+                    }
+                    const csvBenchmarkText = await benchmarkResponse.text();
+                    
+                    // Process the data
+                    console.log('Processing weekly data and benchmarks...');
+                    const parsedData = parseCSVData(csvDataText);
+                    const benchmarkData = parseBenchmarkData(csvBenchmarkText);
+                    
+                    if (parsedData && parsedData.length > 0) {
+                        processAndStoreData(parsedData);
+                        addValidationMessage('success', `Successfully processed ${parsedData.length} weekly data entries.`);
+                    }
+                    
+                    if (benchmarkData && Object.keys(benchmarkData).length > 0) {
+                        addValidationMessage('success', `Successfully processed ${Object.keys(benchmarkData).length} weeks of benchmark data.`);
+                    }
+                    
+                    // Initialize UI components
                     populateTimePeriodFilter();
                     populateClinicOptions();
                     updateLastUpdated();
@@ -1439,8 +1655,34 @@
                 try {
                     showLoading('Loading daily metrics...');
                     
-                    // Simulate daily data loading
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    // Fetch daily data from Google Sheets
+                    const dailyDataResponse = await fetch(googleSheetDailyDataUrl);
+                    if (!dailyDataResponse.ok) {
+                        throw new Error(`Failed to fetch daily data: ${dailyDataResponse.status}`);
+                    }
+                    const csvDailyDataText = await dailyDataResponse.text();
+                    
+                    // Fetch daily benchmark data
+                    const dailyBenchmarkResponse = await fetch(googleSheetDailyBenchmarkUrl);
+                    if (!dailyBenchmarkResponse.ok) {
+                        throw new Error(`Failed to fetch daily benchmarks: ${dailyBenchmarkResponse.status}`);
+                    }
+                    const csvDailyBenchmarkText = await dailyBenchmarkResponse.text();
+                    
+                    // Process daily data
+                    console.log('Processing daily data and benchmarks...');
+                    const parsedDailyData = parseDailyCSVData(csvDailyDataText);
+                    const dailyBenchmarks = parseDailyBenchmarkData(csvDailyBenchmarkText);
+                    
+                    if (parsedDailyData && Object.keys(parsedDailyData).length > 0) {
+                        allClinicsDailyData = parsedDailyData;
+                        addValidationMessage('success', `Successfully processed daily data for ${Object.keys(parsedDailyData).length} clinics.`);
+                    }
+                    
+                    if (dailyBenchmarks && Object.keys(dailyBenchmarks).length > 0) {
+                        dailyBenchmarkData = dailyBenchmarks;
+                        addValidationMessage('success', `Successfully processed daily benchmarks.`);
+                    }
                     
                     // Initialize daily components
                     renderDailyCurrent();
@@ -1461,8 +1703,27 @@
                 try {
                     showLoading('Loading meeting notes...');
                     
-                    // Simulate meeting notes loading
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    // Fetch meeting notes data from Google Sheets
+                    const meetingNotesResponse = await fetch(googleSheetMeetingNotesUrl);
+                    if (!meetingNotesResponse.ok) {
+                        throw new Error(`Failed to fetch meeting notes: ${meetingNotesResponse.status}`);
+                    }
+                    const csvMeetingNotesText = await meetingNotesResponse.text();
+                    
+                    // Process meeting notes data
+                    console.log('Processing meeting notes data...');
+                    const parsedMeetingNotes = parseMeetingNotesCSVData(csvMeetingNotesText);
+                    
+                    if (parsedMeetingNotes && parsedMeetingNotes.length > 0) {
+                        allMeetingNotesData = parsedMeetingNotes;
+                        filteredMeetingNotesData = parsedMeetingNotes;
+                        addValidationMessage('success', `Successfully processed ${parsedMeetingNotes.length} meeting notes entries.`);
+                        
+                        // Render meeting notes in the UI
+                        renderMeetingNotes();
+                    } else {
+                        addValidationMessage('warning', 'No meeting notes data found.');
+                    }
                     
                     addValidationMessage('success', 'Meeting notes loaded successfully');
                     console.log('Meeting notes loading complete');
