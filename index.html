@@ -1442,45 +1442,51 @@
             function populateTable(data) {
                 console.log('Populating table with data:', data ? data.length : 0, 'entries');
                 try {
-                    const tableContainer = document.getElementById('dataTable');
-                    if (!tableContainer) {
-                        console.warn('Data table container not found');
+                    const tableBody = document.getElementById('tableBody');
+                    if (!tableBody) {
+                        console.warn('Table body element not found');
                         return;
                     }
                     
                     if (!data || data.length === 0) {
-                        tableContainer.innerHTML = '<div style="text-align:center; padding:20px;">No data available for table.</div>';
+                        tableBody.innerHTML = '<tr><td colspan="25" style="text-align:center; padding:20px;">No data available.</td></tr>';
                         return;
                     }
                     
-                    // Create table HTML
-                    let html = '<table class="data-table" style="width:100%; border-collapse:collapse; margin-top:10px;">';
-                    
-                    // Table header
-                    html += '<thead><tr style="background:#f5f5f5;">';
-                    const headers = ['Clinic', 'New Patients %', 'Visits Target %', 'Cancellation %', 'No Show %', 'Google Reviews', 'Satisfaction'];
-                    headers.forEach(header => {
-                        html += `<th style="padding:12px; border:1px solid #ddd; text-align:left;">${header}</th>`;
-                    });
-                    html += '</tr></thead>';
-                    
-                    // Table body
-                    html += '<tbody>';
-                    data.forEach((row, index) => {
+                    // Generate table rows for existing table structure
+                    let html = '';
+                    data.forEach((clinic, index) => {
                         const bgColor = index % 2 === 0 ? '#ffffff' : '#f9f9f9';
-                        html += `<tr style="background:${bgColor};">`;
-                        html += `<td style="padding:10px; border:1px solid #ddd;">${row.Clinic || 'N/A'}</td>`;
-                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['New Patients %'] || 'N/A'}</td>`;
-                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['Visits Target %'] || 'N/A'}</td>`;
-                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['Cancellation %'] || 'N/A'}</td>`;
-                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['No Show %'] || 'N/A'}</td>`;
-                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['Google Reviews Only'] || 'N/A'}</td>`;
-                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['Satisfaction Collect'] || 'N/A'}</td>`;
+                        html += `<tr style="background:${bgColor};" onclick="showDetails('${clinic.clinic}')">`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${clinic.clinic || 'N/A'}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${clinic.date || 'N/A'}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateAlertBadge(clinic.areaManagerNotesAlert || 'Normal')}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.newPatients, clinic.newPatientsBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.visitsTarget, clinic.visitsTargetBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.dailyDistribution, clinic.dailyDistributionBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.utilization, clinic.utilizationBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.retention2nd, clinic.retention2ndBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.retention5th, clinic.retention5thBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.retention10th, clinic.retention10thBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.retention15th, clinic.retention15thBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.cancel, clinic.cancelBenchmark, false)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.noShow, clinic.noShowBenchmark, false)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.noUpcoming, clinic.noUpcomingBenchmark, false)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.units, clinic.unitsBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.insuranceCoding, clinic.insuranceCodingBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.supportiveCoding, clinic.supportiveCodingBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.averageVisits, clinic.averageVisitsBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.confirmation, clinic.confirmationBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.directAccess, clinic.directAccessBenchmark, false)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.surveyCollection, clinic.surveyCollectionBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateMetricCell(clinic.satisfaction, clinic.satisfactionBenchmark, true)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${calculateOverallScore(clinic)}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;">${generateTrendIndicator(clinic.trend || 'stable')}</td>`;
+                        html += `<td style="padding:8px; border:1px solid #ddd;"><button class="action-button" onclick="showDetails('${clinic.clinic}')">View Details</button></td>`;
                         html += '</tr>';
                     });
-                    html += '</tbody></table>';
                     
-                    tableContainer.innerHTML = html;
+                    tableBody.innerHTML = html;
                     console.log(`Populated table with ${data.length} rows`);
                 } catch (error) {
                     console.error('Error populating table:', error);
