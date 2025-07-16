@@ -3592,6 +3592,80 @@ function generateDailyMetricCell(row, metricId){
     const alert = row[metricId+'Alert']||'normal';
     return `<td class="metric-value"><span class="alert-badge alert-${alert}">${display}</span></td>`;
 }
+
+// Render daily metrics as a pivot table
+function renderDailyPivot() {
+    console.log("Rendering daily metrics pivot view");
+    if (!allClinicsDailyData || Object.keys(allClinicsDailyData).length === 0) {
+        document.getElementById('dailyTableContainer').innerHTML = '<div class="alert alert-info">No daily data available. Please ensure the Daily Data URL is configured correctly.</div>';
+        return;
+    }
+    
+    // Get date range from the date range picker
+    const dateRange = document.getElementById('dateRangePickerDaily').value;
+    const [startDate, endDate] = dateRange.split(' - ').map(d => moment(d, 'MM/DD/YYYY').format('YYYY-MM-DD'));
+    
+    // Get selected metric from the dropdown
+    const metricSelector = document.getElementById('dailyMetricSelector');
+    const selectedMetric = metricSelector ? metricSelector.value : 'targetVisits';
+    
+    // Filter dates in the selected range
+    const dates = [];
+    const currentDate = moment(startDate);
+    const endMoment = moment(endDate);
+    
+    while (currentDate <= endMoment) {
+        dates.push(currentDate.format('YYYY-MM-DD'));
+        currentDate.add(1, 'days');
+    }
+    
+    // Create the pivot table HTML
+    let tableHtml = `
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Clinic</th>
+`;
+    
+    // Add date column headers
+    dates.forEach(date => {
+        tableHtml += `<th>${moment(date).format('MM/DD')}</th>`;
+    });
+    
+    tableHtml += `
+                </tr>
+            </thead>
+            <tbody>
+`;
+    
+    // Sort clinics alphabetically
+    const clinics = Object.keys(allClinicsDailyData).sort((a, b) => a.localeCompare(b));
+    
+    // Add data for each clinic
+    clinics.forEach(clinic => {
+        tableHtml += `<tr><td class="clinic-name">${clinic}</td>`;
+        
+        // Add cells for each date
+        dates.forEach(date => {
+            const record = allClinicsDailyData[clinic].find(r => r.Date === date);
+            if (record) {
+                tableHtml += generateDailyMetricCell(record, selectedMetric);
+            } else {
+                tableHtml += '<td class="metric-value">-</td>';
+            }
+        });
+        
+        tableHtml += '</tr>';
+    });
+    
+    tableHtml += '</tbody></table>';
+    
+    // Update the container
+    document.getElementById('dailyTableContainer').innerHTML = tableHtml;
+    
+    // Show legend for alert colors
+    document.getElementById('dailyLegend').style.display = 'block';
+}
     
             // Show loading overlay
             function showLoading(message = "Loading...") {
