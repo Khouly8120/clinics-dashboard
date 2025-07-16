@@ -3407,7 +3407,7 @@ function generateDailyMetricCell(row, metricId){
         targetText = `Target: ${tDisplay}`;
     }
     
-    // Calculate trend arrow (simplified version)
+    // Calculate trend arrow using same logic and styling as weekly updates
     let arrowSpan = '';
     const higherIsBetter = (benchRow[header+'_HigherIsBetter'] === undefined || benchRow[header+'_HigherIsBetter'] === null) ? 
         true : (benchRow[header+'_HigherIsBetter'].toString().toLowerCase() === 'true');
@@ -3416,12 +3416,17 @@ function generateDailyMetricCell(row, metricId){
         const numVal = parseFloat(val);
         const numTarget = parseFloat(targetVal);
         if(!isNaN(numVal) && !isNaN(numTarget)){
+            let trend = 'same';
             if(numVal > numTarget){
-                arrowSpan = higherIsBetter ? '<span class="trend-arrow up">↗</span>' : '<span class="trend-arrow down">↘</span>';
+                trend = higherIsBetter ? 'up' : 'down';
             } else if(numVal < numTarget){
-                arrowSpan = higherIsBetter ? '<span class="trend-arrow down">↘</span>' : '<span class="trend-arrow up">↗</span>';
-            } else {
-                arrowSpan = '<span class="trend-arrow same">→</span>';
+                trend = higherIsBetter ? 'down' : 'up';
+            }
+            
+            // Use the same getTrendArrow function and styling as weekly updates
+            const arrow = getTrendArrow(trend);
+            if(arrow){
+                arrowSpan = `<span class="trend-arrow trend-${trend}">${arrow}</span>`;
             }
         }
     }
