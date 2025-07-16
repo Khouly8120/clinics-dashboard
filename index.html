@@ -959,6 +959,13 @@
                     <table id="dailyTable"><thead id="dailyTableHead"></thead>
                         <tbody id="dailyTableBody"><tr><td style="text-align:center;">Loading...</td></tr></tbody></table>
                 </div>
+                <div id="dailyLegend" style="margin-top:10px;display:none;">
+                    <h5>Alert Legend:</h5>
+                    <div class="legend-item"><span class="alert-badge alert-good">GOOD</span> Above target</div>
+                    <div class="legend-item"><span class="alert-badge alert-ok">OK</span> Meeting target</div>
+                    <div class="legend-item"><span class="alert-badge alert-warning">WARNING</span> Below target</div>
+                    <div class="legend-item"><span class="alert-badge alert-danger">DANGER</span> Significantly below target</div>
+                </div>
             </div>
             
             <div class="tab-content" id="meetingNotesTab">
@@ -3591,6 +3598,50 @@ function generateDailyMetricCell(row, metricId){
     const display = (val===null||val===undefined||val==='') ? 'N/A' : val;
     const alert = row[metricId+'Alert']||'normal';
     return `<td class="metric-value"><span class="alert-badge alert-${alert}">${display}</span></td>`;
+}
+
+// Populate metrics selector dropdown for the Daily Numbers tab
+function populateMetricSelector() {
+    console.log("Populating metric selector");
+    const metricSelector = document.getElementById('dailyMetricSelector');
+    if (!metricSelector) {
+        console.error("Daily metric selector element not found!");
+        return;
+    }
+    
+    // Check if options already exist
+    if (metricSelector.options.length > 1) {
+        console.log("Metric selector already populated");
+        return;
+    }
+    
+    // Define metrics for the dropdown if they don't exist in the HTML
+    const metrics = [
+        { id: 'targetVisits', name: 'Target Visits' },
+        { id: 'googleReviews', name: 'Google Reviews' },
+        { id: 'newPatients', name: 'New Patients Target' },
+        { id: 'noUpcoming', name: 'No Upcoming %' },
+        { id: 'cancellation', name: 'Cancellation %' },
+        { id: 'noShow', name: 'No Show %' },
+        { id: 'utilization', name: 'Utilization %' },
+        { id: 'satisfactionCollect', name: 'Satisfaction Collection %' }
+    ];
+    
+    // Clear existing options
+    metricSelector.innerHTML = '';
+    
+    // Add options to the dropdown
+    metrics.forEach(metric => {
+        const option = document.createElement('option');
+        option.value = metric.id;
+        option.textContent = metric.name;
+        metricSelector.appendChild(option);
+    });
+    
+    // Set default selection to first metric
+    metricSelector.value = metrics[0].id;
+    
+    console.log("Metric selector populated with", metrics.length, "metrics");
 }
 
 // Initialize the date range picker for the daily metrics tab
