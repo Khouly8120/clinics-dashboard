@@ -3389,7 +3389,48 @@ function generateDailyMetricCell(row, metricId){
     const val = row[header];
     const display = (val===null||val===undefined||val==='') ? 'N/A' : val;
     const alert = row[metricId+'Alert']||'normal';
-    return `<td class="metric-value"><span class="alert-badge alert-${alert}">${display}</span></td>`;
+    
+    // Get target value from benchmark data if available
+    const benchKey = row.Date + '|' + row.Clinic;
+    const benchRow = dailyBenchmarkData[benchKey] || latestDailyBenchmarkByClinic[row.Clinic] || {};
+    const targetVal = benchRow[header];
+    
+    // Format target text
+    let targetText = 'Target: N/A';
+    if(targetVal !== undefined && targetVal !== null && targetVal !== ''){
+        let tDisplay = targetVal;
+        // Format percentage values
+        if(header.includes('%')){
+            const n = parseFloat(targetVal);
+            tDisplay = isNaN(n) ? targetVal : n.toFixed(1) + '%';
+        }
+        targetText = `Target: ${tDisplay}`;
+    }
+    
+    // Calculate trend arrow (simplified version)
+    let arrowSpan = '';
+    const higherIsBetter = (benchRow[header+'_HigherIsBetter'] === undefined || benchRow[header+'_HigherIsBetter'] === null) ? 
+        true : (benchRow[header+'_HigherIsBetter'].toString().toLowerCase() === 'true');
+    
+    if(val !== null && val !== undefined && val !== '' && targetVal !== null && targetVal !== undefined && targetVal !== ''){
+        const numVal = parseFloat(val);
+        const numTarget = parseFloat(targetVal);
+        if(!isNaN(numVal) && !isNaN(numTarget)){
+            if(numVal > numTarget){
+                arrowSpan = higherIsBetter ? '<span class="trend-arrow up">↗</span>' : '<span class="trend-arrow down">↘</span>';
+            } else if(numVal < numTarget){
+                arrowSpan = higherIsBetter ? '<span class="trend-arrow down">↘</span>' : '<span class="trend-arrow up">↗</span>';
+            } else {
+                arrowSpan = '<span class="trend-arrow same">→</span>';
+            }
+        }
+    }
+    
+    return `<td class="metric-value">
+    <div>${display} ${arrowSpan}</div>
+    <span class="alert-badge alert-${alert}">${alert.toUpperCase()}</span>
+    <div class="deviation">${targetText}</div>
+</td>`;
 }
     
             // Show loading overlay
