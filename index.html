@@ -966,7 +966,10 @@
             let filteredMeetingNotesData = [];
             
             // --- Global variables for Historical Charts ---
-            let selectedMetric = 'targetVisits'; // Default selected metric 
+            let selectedMetric = 'targetVisits'; // Default selected metric
+            
+            // --- Global variables for Validation ---
+            let validationMessages = []; 
     
             // --- Data Definitions ---
             // Note: AreaManagerNotes removed, AreaManagerNotesAlert kept (no benchmark)
@@ -1031,7 +1034,7 @@
                 start: moment().subtract(8, 'weeks'),
                 end: moment()
             };
-            let validationMessages = []; // Store validation messages
+            // validationMessages already declared above
     
             // --- Core Functions ---
     
@@ -1281,6 +1284,41 @@
                 }
                 
                 return 'neutral';
+            }
+            
+            // Add validation message
+            function addValidationMessage(type, message) {
+                console.log(`Validation [${type}]:`, message);
+                validationMessages.push({ type, message, timestamp: new Date() });
+            }
+            
+            // Display validation messages
+            function displayValidationMessages() {
+                console.log('Displaying validation messages:', validationMessages);
+                // This would normally display messages in the UI
+                // For now, just log them to prevent console errors
+            }
+            
+            // Enable dashboard controls
+            function enableControls() {
+                console.log('Enabling dashboard controls');
+                // Enable various UI controls
+                const controls = document.querySelectorAll('button, select, input');
+                controls.forEach(control => {
+                    if (!control.hasAttribute('data-keep-disabled')) {
+                        control.disabled = false;
+                    }
+                });
+            }
+            
+            // Disable dashboard controls
+            function disableControls() {
+                console.log('Disabling dashboard controls');
+                // Disable various UI controls
+                const controls = document.querySelectorAll('button, select, input');
+                controls.forEach(control => {
+                    control.disabled = true;
+                });
             }
             
             // Initial setup function called after Google Charts loads
