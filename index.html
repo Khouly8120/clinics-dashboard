@@ -1234,6 +1234,55 @@
                 // TODO: Implement actual chart updating logic when historical charts are needed
             }
             
+            // Show loading indicator
+            function showLoading(message = 'Loading...') {
+                console.log('Loading:', message);
+                const loadingElement = document.getElementById('loadingIndicator');
+                if (loadingElement) {
+                    loadingElement.style.display = 'block';
+                    loadingElement.textContent = message;
+                }
+            }
+            
+            // Hide loading indicator
+            function hideLoading(errorMessage = null) {
+                console.log('Loading complete', errorMessage ? ': ' + errorMessage : '');
+                const loadingElement = document.getElementById('loadingIndicator');
+                if (loadingElement) {
+                    loadingElement.style.display = 'none';
+                }
+                if (errorMessage) {
+                    console.error('Error:', errorMessage);
+                }
+            }
+            
+            // Get alert level for a metric value compared to benchmark
+            function getAlertLevel(value, benchmark, higherIsBetter = true) {
+                if (value === null || value === undefined || benchmark === null || benchmark === undefined) {
+                    return 'neutral';
+                }
+                
+                const numValue = parseFloat(value);
+                const numBenchmark = parseFloat(benchmark);
+                
+                if (isNaN(numValue) || isNaN(numBenchmark)) {
+                    return 'neutral';
+                }
+                
+                const threshold = 0.05; // 5% threshold
+                const diff = (numValue - numBenchmark) / numBenchmark;
+                
+                if (higherIsBetter) {
+                    if (diff >= threshold) return 'good';
+                    if (diff <= -threshold) return 'bad';
+                } else {
+                    if (diff <= -threshold) return 'good';
+                    if (diff >= threshold) return 'bad';
+                }
+                
+                return 'neutral';
+            }
+            
             // Initial setup function called after Google Charts loads
             async function setupDashboard() {
                 console.log("Dashboard setup initiated.");
