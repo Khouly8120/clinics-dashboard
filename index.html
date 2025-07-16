@@ -2536,7 +2536,7 @@
                 trendData.addColumn({type: 'string', role: 'style'}); // For alert colors
     
                 filteredData.forEach(d => {
-                    const weekLabel = d.date || moment().year(d.Year).isoWeek(d.Week).startOf('isoWeek').format('MMM D, YYYY');
+                    const weekLabel = `W${d.Week}, ${d.Year}`;
                     const value = d[csvHeader];
                     const alertLevel = d[selectedMetric + 'Alert'] || 'normal';
                     const color = getAlertColor(alertLevel);
@@ -2555,7 +2555,7 @@
                     title: `${metricName} Trend for ${selectedClinic === 'all' ? 'All Clinics (Avg)' : selectedClinic}`,
                     curveType: 'function',
                     legend: { position: 'bottom' },
-                    hAxis: { title: 'Week Start', slantedText: true, slantedTextAngle: 45 },
+                    hAxis: { title: 'Week', slantedText: true, slantedTextAngle: 45 },
                     vAxis: { title: metricDef?.type === 'percentage' ? 'Value (%)' : 'Value' },
                     tooltip: { isHtml: true },
                     pointSize: 5,
@@ -2707,7 +2707,7 @@
                  detailData.addColumn({type: 'string', role: 'style'});
     
                  filteredData.forEach(d => {
-                    const weekLabel = moment().year(d.Year).isoWeek(d.Week).startOf('isoWeek').format('MMM D, YYYY');
+                    const weekLabel = `W${d.Week}`;
                     const value = d[csvHeader];
                     const alertLevel = d[selectedMetric + 'Alert'] || 'normal';
                     if (typeof value === 'number') {
