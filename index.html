@@ -3593,6 +3593,43 @@ function generateDailyMetricCell(row, metricId){
     return `<td class="metric-value"><span class="alert-badge alert-${alert}">${display}</span></td>`;
 }
 
+// Initialize the date range picker for the daily metrics tab
+function initializeDailyRangePicker() {
+    console.log("Initializing daily date range picker");
+    const picker = document.getElementById('dateRangePickerDaily');
+    if (!picker) {
+        console.error("Daily date range picker element not found!");
+        return;
+    }
+    
+    // Set default date range (last 7 days)
+    const endDate = moment().format('MM/DD/YYYY');
+    const startDate = moment().subtract(7, 'days').format('MM/DD/YYYY');
+    picker.value = `${startDate} - ${endDate}`;
+    
+    // Initialize the date range picker
+    try {
+        $(picker).daterangepicker({
+            startDate: startDate,
+            endDate: endDate,
+            opens: 'left',
+            maxDate: moment().format('MM/DD/YYYY'),
+            locale: {
+                format: 'MM/DD/YYYY'
+            }
+        }, function(start, end) {
+            // When selection changes, update the view
+            renderDailyPivot();
+        });
+        console.log("Daily date range picker initialized");
+    } catch (error) {
+        console.error("Error initializing daily date range picker:", error);
+        // Fallback to standard date input if daterangepicker fails
+        picker.type = "text";
+        picker.value = `${startDate} - ${endDate}`;
+    }
+}
+
 // Render daily metrics as a pivot table
 function renderDailyPivot() {
     console.log("Rendering daily metrics pivot view");
