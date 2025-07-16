@@ -1029,10 +1029,10 @@
                         console.log("Note: renderCurrentWeek function not defined, skipping...");
                     }
                     
-                    if (typeof renderDailyCurrent === 'function') {
-                        renderDailyCurrent();
+                    if (typeof renderDailyPivot === 'function') {
+                        renderDailyPivot();
                     } else {
-                        console.log("Note: renderDailyCurrent function not defined, skipping...");
+                        console.log("Note: renderDailyPivot function not defined, skipping...");
                     }
                     
                     // Render Meeting Notes tab
@@ -2787,7 +2787,7 @@ function populateCardView(data) {
                     if(!document.getElementById('dateRangePickerDaily').value){
                         initializeDailyRangePicker();
                     }
-                    renderDailyCurrent();
+                    renderDailyPivot();
                 }
                 // If switching to historical tab, update charts
                 if (tabId === 'historicalTrends' && availableWeeks.length > 0) {
