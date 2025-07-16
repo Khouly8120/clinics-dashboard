@@ -1065,9 +1065,6 @@
     
                     
                     console.log("Dashboard Initialized Successfully.");
-        // Enable view toggle buttons & comparison controls now that data loaded
-        document.querySelectorAll('.view-toggle button').forEach(b=>b.disabled=false);
-        document.querySelectorAll('#comparisonTab button, #comparisonTab select').forEach(el=>el.disabled=false);
                     // displayValidationMessages(); // Validation messages hidden on success
                     hideLoading();
     
@@ -1742,19 +1739,9 @@
                     targetDisplay = targetDisplay.trim().slice(0,-1); // remove trailing % if present
                 }
                 const targetText = (targetDisplay===null||targetDisplay===undefined||targetDisplay==='') ? 'Target: N/A' : `Target: ${targetDisplay}`;
-                // Get trend indicator for the metric (if available)
-    const trend = row[metricId + 'Trend'] || '';
-    const arrow = getTrendArrow(trend);
-    let arrowSpan = '';
-    if (arrow) {
-        arrowSpan = `<span class="trend-arrow trend-${trend||'same'}">${arrow}</span>`;
-    }
-    
-    return `<td class="metric-value">
-            <span class="alert-badge alert-${alert}">${displayValue}</span>
-            ${arrowSpan}
-            <div class="deviation">${targetText}</div>
-        </td>`;
+                return `<td class="metric-value">${displayValue}
+                        <span class="alert-badge alert-${alert}">${alert.toUpperCase()}</span>
+                        <div class="deviation">${targetText}</div></td>`;
             }
     
             function renderDailyPivot(){
@@ -2165,7 +2152,7 @@
                     availableWeeks.forEach(week => {
                         const option = document.createElement('option');
                         option.value = `${week.year}-W${week.week}`;
-                        option.textContent = moment().year(week.year).isoWeek(week.week).startOf('isoWeek').format('MMM D, YYYY');
+                        option.textContent = `W${week.week}, ${week.year}`;
                         selector.appendChild(option);
                     });
                     // Set default selected week (e.g., last 4 weeks)
@@ -2369,65 +2356,7 @@
                  filterTable(); // Re-apply filters for the new time period
             }
     
-
-            // --- Utility Function: Populate Card View ---
-function populateCardView(data) {
-    const container = document.getElementById('cardView');
-    if (!container) return;
-    container.innerHTML = '';
-    if (!data || data.length === 0) {
-        container.innerHTML = '<p>No data available for selected filters.</p>';
-        return;
-    }
-    data.forEach(clinic => {
-        const card = document.createElement('div');
-        card.className = 'summary-card clinic-card';
-        const alertLevel = clinic.overallAlert || 'normal';
-        const trendText = clinic.weeklyTrend || 'N/A';
-        const notesAlert = clinic.areaManagerNotesAlertLevel || 'N/A';
-        card.innerHTML = `
-            <h2 class="status-text alert-${alertLevel}">${alertLevel.toUpperCase()}</h2>
-            <h3>${clinic.Clinic}</h3>
-            <div class="metric-line">Overall Status</div>
-            <div class="metric-line">Trend: ${trendText}</div>
-            <div class="metric-line">Notes Alert: ${notesAlert.toUpperCase()}</div>
-            <button class="action-button" onclick="showDetails('${clinic.Clinic}')">Details</button>`;
-        container.appendChild(card);
-    });
-}
-/* STRAY DUPLICATE BLOCK COMMENTED OUT
-
-    const arrow = getTrendArrow(trend);
-    let arrowSpan='';
-    if(arrow){
-        arrowSpan=`<span class="trend-arrow trend-${trend||'same'}">${arrow}</span>`;
-    }
-    // Determine target: prefer benchmarkData for entry's week, fallback to in-row target column
-    const benchKey = (typeof benchmarkData!=='undefined') ? `${entry.Year}-W${entry.Week}` : null;
-    let benchTarget;
-    if(benchKey && benchmarkData[benchKey]){
-        benchTarget = benchmarkData[benchKey][csvHeader];
-    }
-    const targetVal = (benchTarget!==undefined && benchTarget!==null && benchTarget!=='') ? benchTarget : target;
-
-    let targetText='Target: N/A';
-    if(targetVal!==undefined && targetVal!==null && targetVal!==''){
-        let tDisplay = targetVal;
-        if(metricMeta.type==='percentage'){
-            const n=parseFloat(targetVal);
-            tDisplay = isNaN(n)? targetVal : n.toFixed(1)+'%';
-        }
-        targetText = `Target: ${tDisplay}`;
-    }
-
-    return `<td class="metric-value">
-                <span class="alert-badge alert-${alertLevel}">${display}</span>
-                ${arrowSpan}
-                <div class="deviation">${targetText}</div>
-            </td>`;
-*/
-
-// Toggle between Table and Card view
+            // Toggle between Table and Card view
             function toggleView(view) {
                 currentView = view;
                 const tableView = document.getElementById('tableView');
@@ -2536,7 +2465,7 @@ function populateCardView(data) {
                 });
     
                 detailsHTML += `</div>`;
-                detailsHTML += `<hr style=\"margin: 15px 0;\"><h4 id=\"detailTrendHeader\">Historical Trend (${metricsDefinition.find(m=>m.id===selectedMetric)?.name || selectedMetric}):</h4>`;
+                detailsHTML += `<hr style="margin: 15px 0;"><h4>Historical Trend (${metricsDefinition.find(m=>m.id===selectedMetric)?.name || selectedMetric}):</h4>`;
                 detailsHTML += `<div id="detailTrendChart" style="width: 100%; height: 250px;">Loading chart...</div>`;
     
                 content.innerHTML = detailsHTML;
@@ -2734,10 +2663,6 @@ function populateCardView(data) {
                      const clinicName = document.getElementById('detailsTitle').textContent.split(' - ')[0];
                      if (clinicName && clinicName !== 'Clinic Details') {
                          drawDetailTrendChart(clinicName);
-                         const metricDef = metricsDefinition.find(m=>m.id===metricId);
-                         const metricName = metricDef?.name || metricId;
-                         const headerEl = document.getElementById('detailTrendHeader');
-                         if(headerEl) headerEl.textContent = `Historical Trend (${metricName}):`;
                      }
                 }
             }
@@ -2793,7 +2718,7 @@ function populateCardView(data) {
                 });
     
                  const detailOptions = {
-                    title: `${metricName} Trend for ${clinicName}`,
+                    // title: `${metricName} Trend`,
                     legend: { position: 'none' },
                     hAxis: { textPosition: 'none' }, // Simpler axis for small chart
                     vAxis: { textPosition: 'none' },
@@ -2856,10 +2781,8 @@ function populateCardView(data) {
                             data1 = getWeekData(clinicName, week1Info.year, week1Info.week);
                             data2 = getWeekData(clinicName, week2Info.year, week2Info.week);
                             
-                            const date1Str = moment().year(week1Info.year).isoWeek(week1Info.week).startOf('isoWeek').format('MMM D, YYYY');
-                            const date2Str = moment().year(week2Info.year).isoWeek(week2Info.week).startOf('isoWeek').format('MMM D, YYYY');
-                            comparisonHTML += `<p>Comparing ${date1Str} vs ${date2Str} for ${clinicName === 'all' ? 'All Clinics (Avg)' : clinicName}</p>`;
-                            comparisonHTML += generateComparisonTable(data1, data2, date1Str, date2Str, clinicName === 'all');
+                            comparisonHTML += `<p>Comparing Week ${week1Info.week}, ${week1Info.year} vs Week ${week2Info.week}, ${week2Info.year} for ${clinicName === 'all' ? 'All Clinics (Avg)' : clinicName}</p>`;
+                            comparisonHTML += generateComparisonTable(data1, data2, `W${week1Info.week}`, `W${week2Info.week}`, clinicName === 'all');
                             break;
     
                         case '4-weeks':
@@ -2876,7 +2799,7 @@ function populateCardView(data) {
         return a.week - b.week;
     });
                             const weekData = weeksInfo.map(w => getWeekData(clinicName, w.year, w.week));
-                            const weekLabels = weeksInfo.map(w => moment().year(w.year).isoWeek(w.week).startOf('isoWeek').format('MMM D, YYYY'));
+                            const weekLabels = weeksInfo.map(w => `W${w.week}, ${w.year}`);
     
                             comparisonHTML += `<p>Comparing Weeks: ${weekLabels.join(', ')} for ${clinicName === 'all' ? 'All Clinics (Avg)' : clinicName}</p>`;
                             comparisonHTML += generateMultiComparisonTable(weekData, weekLabels, clinicName === 'all');
@@ -3214,63 +3137,6 @@ function populateCardView(data) {
             }
     
             // --- Utility Functions ---
-// Generate HTML for a metric cell with alert badge, trend arrow, and target deviation.
-function generateMetricCell(entry, metricId){
-    const csvHeader = metricId.charAt(0).toUpperCase()+metricId.slice(1);
-    const rawVal   = entry[csvHeader];
-    const target   = entry[csvHeader+'Target']; // may be pre-computed in dataset
-    const trend    = entry[metricId+'Trend'];   // expected values: 'up','down','same'
-    const alertLevel = entry[metricId+'Alert']||'normal';
-    const metricMeta = metricsDefinition.find(m=>m.id===metricId) || {type:'number'};
-
-    let display = 'N/A';
-    if(rawVal!==null && rawVal!==undefined && rawVal!==''){
-        if(metricMeta.type==='percentage'){
-            const num=parseFloat(rawVal);
-            display = isNaN(num)? rawVal : num.toFixed(1)+'%';
-        } else {
-            display = rawVal;
-        }
-    }
-    const arrow = getTrendArrow(trend);
-    let arrowSpan='';
-    if(arrow){
-        arrowSpan=`<span class="trend-arrow trend-${trend||'same'}">${arrow}</span>`;
-    }
-    // Determine target: prefer benchmarkData for entry's week, fallback to in-row target column
-    const benchKey = (typeof benchmarkData!=='undefined') ? `${entry.Year}-W${entry.Week}` : null;
-    let benchTarget;
-    if(benchKey && benchmarkData[benchKey]){
-        benchTarget = benchmarkData[benchKey][csvHeader];
-    }
-    const targetVal = (benchTarget!==undefined && benchTarget!==null && benchTarget!=='') ? benchTarget : target;
-
-    let targetText='Target: N/A';
-    if(targetVal!==undefined && targetVal!==null && targetVal!==''){
-        let tDisplay = targetVal;
-        if(metricMeta.type==='percentage'){
-            const n=parseFloat(targetVal);
-            tDisplay = isNaN(n)? targetVal : n.toFixed(1)+'%';
-        }
-        targetText = `Target: ${tDisplay}`;
-    }
-
-    return `<td class="metric-value">
-                <span class="alert-badge alert-${alertLevel}">${display}</span>
-                ${arrowSpan}
-                <div class="deviation">${targetText}</div>
-            </td>`;
-}
-
-// Generate cell for daily pivot table (if needed)
-function generateDailyMetricCell(row, metricId){
-    const metricMap = { targetVisits:'Target of Visits', googleReviews:'Google Reviews', newPatients:'New Patients Target', noUpcoming:'No Upcoming %', cancellation:'Cancellation %', noShow:'No Show %', utilization:'Utilization %', satisfactionCollect:'Satisfaction Collection %' };
-    const header = metricMap[metricId] || metricId;
-    const val = row[header];
-    const display = (val===null||val===undefined||val==='') ? 'N/A' : val;
-    const alert = row[metricId+'Alert']||'normal';
-    return `<td class="metric-value"><span class="alert-badge alert-${alert}">${display}</span></td>`;
-}
     
             // Show loading overlay
             function showLoading(message = "Loading...") {
