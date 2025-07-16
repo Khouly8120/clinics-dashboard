@@ -708,6 +708,164 @@
         text-decoration: line-through;
         opacity: 0.7;
     }
+    
+    /* Meeting Notes Redesign Styles */
+    .meeting-notes-header {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px 10px 0 0;
+        margin-bottom: 0;
+    }
+    
+    .meeting-notes-header h2 {
+        margin: 0 0 15px 0;
+        font-size: 1.8em;
+        font-weight: 600;
+    }
+    
+    .meeting-filters-bar {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .filter-item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .filter-item label {
+        font-size: 0.9em;
+        font-weight: 500;
+        opacity: 0.9;
+    }
+    
+    .filter-item input,
+    .filter-item select {
+        padding: 8px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 0.9em;
+        min-width: 120px;
+    }
+    
+    .filter-item input::placeholder {
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .filter-item select option {
+        background: #4c1d95;
+        color: white;
+    }
+    
+    .meeting-notes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 20px;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 0 0 10px 10px;
+        min-height: 400px;
+    }
+    
+    .meeting-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .meeting-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .meeting-card-header {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .meeting-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .meeting-item:last-child {
+        border-bottom: none;
+    }
+    
+    .meeting-item input[type="checkbox"] {
+        margin-top: 2px;
+        transform: scale(1.2);
+    }
+    
+    .meeting-item-content {
+        flex: 1;
+    }
+    
+    .meeting-clinic-name {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 0.95em;
+        margin-bottom: 4px;
+    }
+    
+    .meeting-metric-name {
+        color: #6366f1;
+        font-size: 0.9em;
+        font-weight: 500;
+        margin-bottom: 6px;
+    }
+    
+    .meeting-notes-text {
+        color: #64748b;
+        font-size: 0.85em;
+        line-height: 1.4;
+    }
+    
+    .meeting-item.completed {
+        opacity: 0.6;
+    }
+    
+    .meeting-item.completed .meeting-clinic-name,
+    .meeting-item.completed .meeting-metric-name {
+        text-decoration: line-through;
+    }
+    
+    @media (max-width: 768px) {
+        .meeting-filters-bar {
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .filter-item {
+            width: 100%;
+        }
+        
+        .filter-item input,
+        .filter-item select {
+            min-width: 100%;
+        }
+        
+        .meeting-notes-grid {
+            grid-template-columns: 1fr;
+            padding: 15px;
+        }
+    }
 </style>
     </head>
     <body>
@@ -3613,9 +3771,16 @@ function generateDailyMetricCell(row, metricId){
         container.innerHTML = '';
         
         // Get filter values
-        const dateRange = $('#meetingDateFilter').data('daterangepicker');
-        const startDate = dateRange.startDate.format('YYYY-MM-DD');
-        const endDate = dateRange.endDate.format('YYYY-MM-DD');
+        let startDate, endDate;
+        const dateRangePicker = $('#meetingDateFilter').data('daterangepicker');
+        if (dateRangePicker) {
+            startDate = dateRangePicker.startDate.format('YYYY-MM-DD');
+            endDate = dateRangePicker.endDate.format('YYYY-MM-DD');
+        } else {
+            // Default to show all dates if no date range is selected
+            startDate = moment().subtract(1, 'year').format('YYYY-MM-DD');
+            endDate = moment().add(1, 'year').format('YYYY-MM-DD');
+        }
         
         const clinicFilter = document.getElementById('meetingClinicFilter').value;
         const metricFilter = document.getElementById('meetingMetricFilter').value;
@@ -3627,7 +3792,7 @@ function generateDailyMetricCell(row, metricId){
             const isDone = note.Done === 'TRUE' || note.Done === true || note.Done === '✓';
             
             // Date filter
-            const isInDateRange = moment(meetingDate).isBetween(startDate, endDate, null, '[]');
+            const isInDateRange = moment(meetingDate, 'MM-DD-YYYY').isBetween(startDate, endDate, null, '[]');
             
             // Clinic filter
             const matchesClinic = clinicFilter === 'all' || note.Clinic === clinicFilter;
@@ -3658,60 +3823,68 @@ function generateDailyMetricCell(row, metricId){
         });
         
         if (sortedDates.length === 0) {
-            container.innerHTML = '<p>No meeting notes found matching the filters.</p>';
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: #64748b;">No meeting notes found matching the filters.</div>';
             return;
         }
         
-        // Create a box for each meeting date
+        // Create a card for each meeting date
         sortedDates.forEach(date => {
             const formattedDate = moment(date, 'MM-DD-YYYY').format('MM-DD-YYYY');
-            const meetingBox = document.createElement('div');
-            meetingBox.className = 'meeting-box';
+            const meetingCard = document.createElement('div');
+            meetingCard.className = 'meeting-card';
             
-            const meetingHeader = document.createElement('h3');
-            meetingHeader.textContent = 'Date of meeting: ' + formattedDate;
-            meetingBox.appendChild(meetingHeader);
+            // Card header with meeting date
+            const cardHeader = document.createElement('div');
+            cardHeader.className = 'meeting-card-header';
+            cardHeader.textContent = 'Date of meeting: ' + formattedDate;
+            meetingCard.appendChild(cardHeader);
             
-            const checklist = document.createElement('ul');
-            checklist.className = 'meeting-checklist';
-            
+            // Create meeting items for this date
             meetingsByDate[date].forEach(item => {
-                const listItem = document.createElement('li');
-                const isDone = item.Done === 'TRUE' || item.Done === true || item.Done === '✓';
+                const meetingItem = document.createElement('div');
+                meetingItem.className = 'meeting-item';
                 
+                const isDone = item.Done === 'TRUE' || item.Done === true || item.Done === '✓';
                 if (isDone) {
-                    listItem.classList.add('meeting-item-done');
+                    meetingItem.classList.add('completed');
                 }
                 
+                // Checkbox
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.checked = isDone;
                 checkbox.disabled = true; // Read-only checkboxes
-                listItem.appendChild(checkbox);
+                meetingItem.appendChild(checkbox);
                 
+                // Item content
                 const itemContent = document.createElement('div');
+                itemContent.className = 'meeting-item-content';
                 
-                const clinic = document.createElement('div');
-                clinic.className = 'meeting-clinic';
-                clinic.textContent = item.Clinic;
-                itemContent.appendChild(clinic);
+                // Clinic name
+                const clinicName = document.createElement('div');
+                clinicName.className = 'meeting-clinic-name';
+                clinicName.textContent = item.Clinic;
+                itemContent.appendChild(clinicName);
                 
-                const metric = document.createElement('div');
-                metric.className = 'meeting-metric';
-                metric.textContent = item.Metric;
-                itemContent.appendChild(metric);
+                // Metric name
+                const metricName = document.createElement('div');
+                metricName.className = 'meeting-metric-name';
+                metricName.textContent = item.Metric;
+                itemContent.appendChild(metricName);
                 
-                const notes = document.createElement('div');
-                notes.className = 'meeting-notes';
-                notes.textContent = item.Notes;
-                itemContent.appendChild(notes);
+                // Notes text
+                if (item.Notes && item.Notes.trim()) {
+                    const notesText = document.createElement('div');
+                    notesText.className = 'meeting-notes-text';
+                    notesText.textContent = item.Notes;
+                    itemContent.appendChild(notesText);
+                }
                 
-                listItem.appendChild(itemContent);
-                checklist.appendChild(listItem);
+                meetingItem.appendChild(itemContent);
+                meetingCard.appendChild(meetingItem);
             });
             
-            meetingBox.appendChild(checklist);
-            container.appendChild(meetingBox);
+            container.appendChild(meetingCard);
         });
     }
     
@@ -3840,41 +4013,41 @@ function generateDailyMetricCell(row, metricId){
     
     <!-- Meeting Notes Tab -->
     <div id="meetingNotesTab" class="tab-content">
-        <h2>Meeting Notes</h2>
-        <div class="controls">
-            <div class="filter-group">
-                <label for="meetingDateFilter">Date Range:</label>
-                <input type="text" id="meetingDateFilter" class="date-range-picker">
+        <div class="meeting-notes-header">
+            <h2>Meeting Notes</h2>
+            <div class="meeting-filters-bar">
+                <div class="filter-item">
+                    <label>Date Filter:</label>
+                    <input type="text" id="meetingDateFilter" class="date-range-picker" placeholder="All Dates">
+                </div>
+                <div class="filter-item">
+                    <label>Clinic Filter:</label>
+                    <select id="meetingClinicFilter">
+                        <option value="all">All Clinics</option>
+                        <!-- Will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Metric Filter:</label>
+                    <select id="meetingMetricFilter">
+                        <option value="all">All Metrics</option>
+                        <!-- Will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Status Filter:</label>
+                    <select id="meetingStatusFilter">
+                        <option value="all">All Statuses</option>
+                        <option value="done">Done</option>
+                        <option value="not-done">Not Done</option>
+                    </select>
+                </div>
             </div>
-            <div class="filter-group">
-                <label for="meetingClinicFilter">Clinic:</label>
-                <select id="meetingClinicFilter">
-                    <option value="all">All Clinics</option>
-                    <!-- Will be populated dynamically -->
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="meetingMetricFilter">Metric:</label>
-                <select id="meetingMetricFilter">
-                    <option value="all">All Metrics</option>
-                    <!-- Will be populated dynamically -->
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="meetingStatusFilter">Status:</label>
-                <select id="meetingStatusFilter">
-                    <option value="all">All</option>
-                    <option value="done">Done</option>
-                    <option value="not-done">Not Done</option>
-                </select>
-            </div>
-            <button id="applyMeetingFilters" class="action-button">Apply Filters</button>
         </div>
-        <div id="meetingNotesContainer" class="meeting-notes-container">
+        <div id="meetingNotesContainer" class="meeting-notes-grid">
             <!-- Meeting notes will be populated here -->
             <div class="loading-indicator">Loading meeting notes...</div>
         </div>
     </div>
 </body>
     </html>
-    
