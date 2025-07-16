@@ -3600,6 +3600,103 @@ function generateDailyMetricCell(row, metricId){
     return `<td class="metric-value"><span class="alert-badge alert-${alert}">${display}</span></td>`;
 }
 
+// Store validation messages to display to users
+let validationMessages = [];
+
+// Add a validation message to the queue
+function addValidationMessage(type, message) {
+    validationMessages.push({ type, message });
+    console.log(`Validation ${type}: ${message}`);
+}
+
+// Display all validation messages in a notification area
+function displayValidationMessages() {
+    const validationArea = document.getElementById('validationMessages');
+    if (!validationArea) {
+        console.error("Validation message area not found. Creating one...");
+        // Create a validation area if it doesn't exist
+        const area = document.createElement('div');
+        area.id = 'validationMessages';
+        area.className = 'validation-messages';
+        area.style.position = 'fixed';
+        area.style.top = '10px';
+        area.style.right = '10px';
+        area.style.maxWidth = '400px';
+        area.style.zIndex = '1000';
+        document.body.appendChild(area);
+        return displayValidationMessages(); // Recursive call now that the area exists
+    }
+    
+    if (validationMessages.length === 0) {
+        validationArea.style.display = 'none';
+        return;
+    }
+    
+    validationArea.style.display = 'block';
+    validationArea.innerHTML = '';
+    
+    validationMessages.forEach(msg => {
+        const msgElement = document.createElement('div');
+        msgElement.className = `alert alert-${msg.type}`;
+        msgElement.innerHTML = `
+            <button type="button" class="close" onclick="this.parentElement.remove();">&times;</button>
+            ${msg.message}
+        `;
+        validationArea.appendChild(msgElement);
+    });
+    
+    // Clear the queue after displaying
+    validationMessages = [];
+}
+
+// Initialize date pickers for the dashboard
+function initializeDatePickers() {
+    console.log("Initializing date pickers");
+    
+    // Initialize the date filter on the main dashboard
+    const dateFilter = document.getElementById('dateFilter');
+    if (dateFilter) {
+        // Set default date to today
+        dateFilter.valueAsDate = new Date();
+        dateFilter.max = new Date().toISOString().split('T')[0]; // Can't select future dates
+        dateFilter.disabled = false; // Enable the filter
+    }
+    
+    // Initialize date range picker for historical tab
+    const dateRangePicker = document.getElementById('dateRangePicker');
+    if (dateRangePicker) {
+        try {
+            $(dateRangePicker).daterangepicker({
+                startDate: moment().subtract(3, 'months'),
+                endDate: moment(),
+                opens: 'left',
+                maxDate: moment(),
+                ranges: {
+                    'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                    'Last 3 Months': [moment().subtract(3, 'months'), moment()],
+                    'Last 6 Months': [moment().subtract(6, 'months'), moment()],
+                    'Year to Date': [moment().startOf('year'), moment()],
+                    'Last Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')]
+                },
+                locale: {
+                    format: 'MM/DD/YYYY'
+                }
+            }, function(start, end) {
+                console.log("Date range selected:", start.format('YYYY-MM-DD'), "to", end.format('YYYY-MM-DD'));
+                updateHistoricalCharts(); // Update charts when date range changes
+            });
+            dateRangePicker.disabled = false;
+        } catch (error) {
+            console.error("Error initializing date range picker:", error);
+            // Fallback to standard date input
+            dateRangePicker.type = "text";
+            dateRangePicker.value = moment().subtract(3, 'months').format('MM/DD/YYYY') + " - " + moment().format('MM/DD/YYYY');
+        }
+    }
+    
+    console.log("Date pickers initialized");
+}
+
 // Populate metrics selector dropdown for the Daily Numbers tab
 function populateMetricSelector() {
     console.log("Populating metric selector");
