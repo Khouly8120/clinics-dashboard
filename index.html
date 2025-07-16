@@ -3596,13 +3596,28 @@ function generateDailyMetricCell(row, metricId){
 // Render daily metrics as a pivot table
 function renderDailyPivot() {
     console.log("Rendering daily metrics pivot view");
+    
+    const thead = document.getElementById('dailyTableHead');
+    const tbody = document.getElementById('dailyTableBody');
+    
+    if (!thead || !tbody) {
+        console.error("Daily table head or body not found");
+        return;
+    }
+    
     if (!allClinicsDailyData || Object.keys(allClinicsDailyData).length === 0) {
-        document.getElementById('dailyTableContainer').innerHTML = '<div class="alert alert-info">No daily data available. Please ensure the Daily Data URL is configured correctly.</div>';
+        tbody.innerHTML = '<tr><td colspan="100%" class="alert alert-info">No daily data available. Please ensure the Daily Data URL is configured correctly.</td></tr>';
         return;
     }
     
     // Get date range from the date range picker
     const dateRange = document.getElementById('dateRangePickerDaily').value;
+    if (!dateRange) {
+        // If no date range is selected yet, show a message and exit
+        tbody.innerHTML = '<tr><td colspan="100%">Please select a date range to view daily metrics</td></tr>';
+        return;
+    }
+    
     const [startDate, endDate] = dateRange.split(' - ').map(d => moment(d, 'MM/DD/YYYY').format('YYYY-MM-DD'));
     
     // Get selected metric from the dropdown
@@ -3619,52 +3634,46 @@ function renderDailyPivot() {
         currentDate.add(1, 'days');
     }
     
-    // Create the pivot table HTML
-    let tableHtml = `
-        <table class="table table-bordered table-striped">
-            <thead>
-                <tr>
-                    <th>Clinic</th>
-`;
+    // Build the table header
+    let headerHtml = '<tr><th>Clinic</th>';
     
     // Add date column headers
     dates.forEach(date => {
-        tableHtml += `<th>${moment(date).format('MM/DD')}</th>`;
+        headerHtml += `<th>${moment(date).format('MM/DD')}</th>`;
     });
     
-    tableHtml += `
-                </tr>
-            </thead>
-            <tbody>
-`;
+    headerHtml += '</tr>';
+    thead.innerHTML = headerHtml;
+    
+    // Clear previous body content
+    tbody.innerHTML = '';
     
     // Sort clinics alphabetically
     const clinics = Object.keys(allClinicsDailyData).sort((a, b) => a.localeCompare(b));
     
     // Add data for each clinic
     clinics.forEach(clinic => {
-        tableHtml += `<tr><td class="clinic-name">${clinic}</td>`;
+        const row = document.createElement('tr');
+        row.innerHTML = `<td class="clinic-name">${clinic}</td>`;
         
         // Add cells for each date
         dates.forEach(date => {
             const record = allClinicsDailyData[clinic].find(r => r.Date === date);
             if (record) {
-                tableHtml += generateDailyMetricCell(record, selectedMetric);
+                row.innerHTML += generateDailyMetricCell(record, selectedMetric);
             } else {
-                tableHtml += '<td class="metric-value">-</td>';
+                row.innerHTML += '<td class="metric-value">-</td>';
             }
         });
         
-        tableHtml += '</tr>';
+        tbody.appendChild(row);
     });
     
-    tableHtml += '</tbody></table>';
-    
-    // Update the container
-    document.getElementById('dailyTableContainer').innerHTML = tableHtml;
-    
-    // Show legend for alert colors
-    document.getElementById('dailyLegend').style.display = 'block';
+    // Show the legend for alert colors if it exists
+    const legend = document.getElementById('dailyLegend');
+    if (legend) {
+        legend.style.display = 'block';
+    }
 }
     
             // Show loading overlay
