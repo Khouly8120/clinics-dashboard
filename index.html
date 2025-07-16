@@ -1594,20 +1594,46 @@
                     }
                     
                     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                    console.log('📋 CSV Headers found:', headers);
+                    
                     const data = [];
+                    let validRows = 0;
+                    let invalidRows = 0;
                     
                     for (let i = 1; i < lines.length; i++) {
                         const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                        
                         if (values.length >= headers.length) {
                             const row = {};
                             headers.forEach((header, index) => {
                                 row[header] = values[index] || '';
                             });
+                            
+                            // Debug each row
+                            const hasClinic = row.Clinic && row.Clinic.trim() !== '';
+                            const hasWeek = row.Week && row.Week.trim() !== '';
+                            const hasYear = row.Year && row.Year.trim() !== '';
+                            
+                            if (!hasClinic || !hasWeek || !hasYear) {
+                                console.warn(`⚠️ Row ${i + 1} has missing data:`, {
+                                    clinic: hasClinic ? '✓' : '❌ Missing',
+                                    week: hasWeek ? '✓' : '❌ Missing', 
+                                    year: hasYear ? '✓' : '❌ Missing',
+                                    rowData: row
+                                });
+                                invalidRows++;
+                            } else {
+                                validRows++;
+                            }
+                            
                             data.push(row);
+                        } else {
+                            console.warn(`⚠️ Row ${i + 1} has insufficient columns: expected ${headers.length}, got ${values.length}`);
+                            invalidRows++;
                         }
                     }
                     
-                    console.log(`Parsed ${data.length} rows of CSV data`);
+                    console.log(`✅ Parsed ${data.length} total rows: ${validRows} valid, ${invalidRows} with issues`);
                     return data;
                 } catch (error) {
                     console.error('Error parsing CSV data:', error);
@@ -1776,26 +1802,34 @@
             async function initializeDashboard() {
                 console.log('Initializing main dashboard...');
                 try {
-                    showLoading('Loading weekly data...');
+                    showLoading('Loading dashboard data...');
                     
-                    // Fetch weekly data from Google Sheets
-                    const dataResponse = await fetch(googleSheetDataUrl);
-                    if (!dataResponse.ok) {
-                        throw new Error(`Failed to fetch data: ${dataResponse.status}`);
+                    // Debug: Show what URLs we're trying to access
+                    console.log('🔗 Fetching main data from:', googleSheetDataUrl);
+                    
+                    // Fetch main data from Google Sheets
+                    const response = await fetch(googleSheetDataUrl);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch data: ${response.status}`);
                     }
-                    const csvDataText = await dataResponse.text();
+                    const csvText = await response.text();
+                    console.log('📊 Main data fetched, length:', csvText.length, 'characters');
+                    
+                    // Debug: Show what benchmark URL we're trying to access
+                    console.log('🔗 Fetching benchmark data from:', googleSheetBenchmarkUrl);
                     
                     // Fetch benchmark data
                     const benchmarkResponse = await fetch(googleSheetBenchmarkUrl);
                     if (!benchmarkResponse.ok) {
-                        throw new Error(`Failed to fetch benchmarks: ${benchmarkResponse.status}`);
+                        throw new Error(`Failed to fetch benchmark data: ${benchmarkResponse.status}`);
                     }
-                    const csvBenchmarkText = await benchmarkResponse.text();
+                    const benchmarkCsvText = await benchmarkResponse.text();
+                    console.log('📊 Benchmark data fetched, length:', benchmarkCsvText.length, 'characters');
                     
                     // Process the data
                     console.log('Processing weekly data and benchmarks...');
-                    const parsedData = parseCSVData(csvDataText);
-                    const benchmarkData = parseBenchmarkData(csvBenchmarkText);
+                    const parsedData = parseCSVData(csvText);
+                    const benchmarkData = parseBenchmarkData(benchmarkCsvText);
                     
                     if (parsedData && parsedData.length > 0) {
                         processAndStoreData(parsedData);
