@@ -949,7 +949,7 @@
             async function setupDashboardAsync(){
                 console.log('setupDashboardAsync starting...');
                 try {
-                    await Promise.all([loadDataAndBenchmarks(), loadDailyData(), loadMeetingNotesData()]);
+                    await Promise.all([loadDailyData(), loadMeetingNotesData()]);
                     initializeTabs();
                     renderCurrentWeek();
                     renderDailyCurrent();
