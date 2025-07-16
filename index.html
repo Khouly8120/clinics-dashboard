@@ -13,792 +13,695 @@
             window.location.href = "error.html";
         }
     </script>
+    <!-- Google Charts Library -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!-- Date Range Picker Dependencies -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <style>
+        /* CSS Styles remain largely the same, adding styles for validation */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .last-updated {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .filter-group select, .filter-group input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .summary-card .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .critical { color: #e74c3c; }
+        .high { color: #f39c12; }
+        .low { color: #f1c40f; }
+        .normal { color: #27ae60; }
+
+        .main-table {
+            margin: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .view-toggle button {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background-color 0.3s;
+        }
+
+        .view-toggle button.active {
+            background-color: rgba(255, 255, 255, 0.4);
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9em;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th:first-child, td:first-child {
+            position: sticky;
+            left: 0;
+            background: #e9ecef;
+            z-index: 11;
+        }
+
+        thead th:first-child {
+            z-index: 12;
+            background: #dee2e6;
+        }
+
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .alert-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-align: center;
+            min-width: 60px;
+            display: inline-block;
+        }
+
+        .alert-critical { background-color: #e74c3c; color: white; }
+        .alert-high { background-color: #f39c12; color: white; }
+        .alert-low { background-color: #f1c40f; color: #333; }
+        .alert-slight { background-color: #1890ff; color: white; }
+        .alert-normal { background-color: #27ae60; color: white; }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .tab-container {
+            margin: 20px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: -1px;
+        }
+
+        .tab-button {
+            padding: 10px 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+        }
+
+        .tab-button.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 5px 5px 5px;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .meeting-notes-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .meeting-box {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 15px;
+            width: 300px;
+            min-height: 200px;
+        }
+
+        .meeting-box h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 1.1em;
+        }
+
+        .meeting-checklist {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .meeting-checklist li {
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        .meeting-clinic { font-weight: bold; color: #2c3e50; }
+        .meeting-metric { color: #3498db; }
+        .meeting-notes { margin-top: 5px; color: #666; font-size: 0.9em; }
+
+    </style>
 </head>
 <body>
-    <h1>Management Clinic Dashboard</h1>
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Clinic Metrics Alert Dashboard (Dual Sheet)</title>
-        <!-- Google Charts Library -->
-        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-        <!-- Date Range Picker Dependencies -->
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-        <style>
-            /* CSS Styles remain largely the same, adding styles for validation */
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-    
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background-color: #f5f5f5;
-                color: #333;
-            }
-    
-            .header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 20px;
-                text-align: center;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-    
-            .header h1 {
-                font-size: 2.5em;
-                margin-bottom: 10px;
-            }
-    
-            .last-updated {
-                font-size: 0.9em;
-                opacity: 0.9;
-            }
-    
-            .validation-section {
-                background: #fffbe6; /* Light yellow */
-                border: 1px solid #ffe58f; /* Yellow border */
-                color: #faad14; /* Darker yellow text */
-                padding: 15px;
-                margin: 20px;
-                border-radius: 10px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            }
-    
-            .validation-section h4 {
-                margin-top: 0;
-                margin-bottom: 10px;
-                color: #d48806; /* Darker yellow for heading */
-            }
-    
-            .validation-section ul {
-                list-style-type: disc;
-                margin-left: 20px;
-                padding-left: 0;
-            }
-            
-            .validation-section li {
-                margin-bottom: 5px;
-                font-size: 0.9em;
-            }
-            
-            .validation-section .error {
-                color: #cf1322; /* Red for errors */
-                font-weight: bold;
-            }
-            
-            .validation-section .warning {
-                 color: #d48806; /* Darker yellow for warnings */
-            }
-            
-            .validation-section .success {
-                 color: #389e0d; /* Green for success */
-                 font-weight: bold;
-            }
-    
-            .controls {
-                background: white;
-                padding: 20px;
-                margin: 20px;
-                border-radius: 10px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                display: flex;
-                gap: 20px;
-                flex-wrap: wrap;
-                align-items: center;
-            }
-    
-            .filter-group {
-                display: flex;
-                flex-direction: column;
-                gap: 5px;
-            }
-    
-            .filter-group label {
-                font-weight: bold;
-                font-size: 0.9em;
-            }
-    
-            .filter-group select, .filter-group input {
-                padding: 8px;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                font-size: 0.9em;
-            }
-    
-            .summary-cards {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-                margin: 20px;
-            }
-    
-            .summary-card {
-                background: white;
-                padding: 20px;
-                border-radius: 10px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                text-align: center;
-            }
-    
-            .summary-card h3 {
-                font-size: 0.9em;
-                color: #666;
-                margin-bottom: 10px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-    
-            .summary-card .number {
-                font-size: 2.5em;
-                font-weight: bold;
-                margin-bottom: 5px;
-            }
-    
-            .critical { color: #e74c3c; }
-            .high { color: #f39c12; }
-            .low { color: #f1c40f; }
-            .normal { color: #27ae60; }
-    
-            .main-table {
-                margin: 20px;
-                background: white;
-                border-radius: 10px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                overflow: hidden;
-            }
-    
-            .table-header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 15px 20px;
-                font-weight: bold;
-                font-size: 1.1em;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-    
-            .view-toggle {
-                display: flex;
-                gap: 10px;
-            }
-    
-            .view-toggle button {
-                background-color: rgba(255, 255, 255, 0.2);
-                border: none;
-                color: white;
-                padding: 5px 10px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 0.8em;
-                transition: background-color 0.3s;
-            }
-    
-            .view-toggle button.active {
-                background-color: rgba(255, 255, 255, 0.4);
-                font-weight: bold;
-            }
-    
-            .view-toggle button:hover {
-                background-color: rgba(255, 255, 255, 0.3);
-            }
-    
-            table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-    
-            th, td {
-                padding: 12px;
-                text-align: left;
-                border-bottom: 1px solid #eee;
-                font-size: 0.9em;
-            }
-    
-                 th {
-                 background-color: #f8f9fa;
-                 font-weight: bold;
-                 position: sticky;
-                 top: 0;
-                 z-index: 10;
-             }
-             /* Sticky first column */
-             th:first-child, td:first-child {
-                 position: sticky;
-                 left: 0;
-                 background: #e9ecef;
-                 z-index: 11;
-             }
-             /* Top-left cell gets higher z-index */
-             thead th:first-child {
-                 z-index: 12;
-                 background: #dee2e6;
-             }
-            tbody tr:hover {
-                background-color: #f8f9fa;
-            }
-    
-            .alert-badge {
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 0.8em;
-                font-weight: bold;
-                text-align: center;
-                min-width: 60px;
-                display: inline-block;
-            }
-    
-            .alert-critical {
-                background-color: #e74c3c;
-                color: white;
-            }
-    
-            .alert-high {
-                background-color: #f39c12;
-                color: white;
-            }
-    
-            .alert-low {
-                background-color: #f1c40f; /* Yellow */
-                color: #333;
-            }
-            .alert-slight {
-                background-color: #1890ff; /* Blue - Choose a suitable color */
-                color: white;
-            }
-            .alert-normal {
-                background-color: #27ae60; /* Green */
-                color: white;
-            }
-    
-            .trend-arrow {
-                font-size: 1.2em;
-                margin-left: 5px;
-            }
-    
-            .trend-up { color: #27ae60; } /* Green for improving trend */
-            .trend-down { color: #e74c3c; } /* Red for worsening trend */
-            .trend-same { color: #95a5a6; }
-    
-            .clinic-name {
-                font-weight: bold;
-                color: #2c3e50;
-            }
-    
-            .metric-value {
-                text-align: center;
-            }
-    
-            .deviation {
-                font-size: 0.8em;
-                color: #666;
-            }
-    
-            .action-button {
-                background-color: #3498db;
-                color: white;
-                border: none;
-                padding: 6px 12px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 0.8em;
-            }
-    
-            .action-button:hover {
-                background-color: #2980b9;
-            }
-    
-            .details-panel {
-                position: fixed;
-                top: 0;
-                right: -800px;
-                width: 800px;
-                height: 100vh;
-                background: white;
-                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-                transition: right 0.3s ease;
-                z-index: 1000;
-                overflow-y: auto;
-            }
-    
-            .details-panel.open {
-                right: 0;
-            }
-    
-            .details-header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 20px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-    
-            .close-btn {
-                background: none;
-                border: none;
-                color: white;
-                font-size: 1.5em;
-                cursor: pointer;
-            }
-    
-            .details-content {
-                padding: 20px;
-            }
-    
-            .metric-detail {
-                margin-bottom: 15px;
-                padding: 15px;
-                border: 1px solid #eee;
-                border-radius: 5px;
-            }
-    
-            .responsive-table {
-                overflow-x: auto;
-            }
-    
-            .chart-container {
-                width: 100%;
-                height: 300px;
-                margin: 20px 0;
-            }
-    
-            .historical-data-section {
-                margin: 20px;
-                background: white;
-                border-radius: 10px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                overflow: hidden;
-                padding-bottom: 20px;
-            }
-    
-            .chart-controls {
-                display: flex;
-                gap: 20px;
-                padding: 20px;
-                flex-wrap: wrap;
-                align-items: center;
-            }
-    
-            .date-range-picker {
-                padding: 8px;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                font-size: 0.9em;
-                width: 250px;
-            }
-    
-            .metric-selector {
-                display: flex;
-                gap: 10px;
-                flex-wrap: wrap;
-            }
-    
-            .metric-selector button {
-                background-color: #f8f9fa;
-                border: 1px solid #ddd;
-                padding: 5px 10px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 0.8em;
-                transition: background-color 0.3s;
-            }
-    
-            .metric-selector button.active {
-                background-color: #3498db;
-                color: white;
-                border-color: #3498db;
-            }
-    
-            .comparison-view {
-                display: none;
-                margin: 20px;
-            }
-    
-            .comparison-view.active {
-                display: block;
-            }
-    
-            .comparison-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 20px;
-            }
-    
-            .comparison-table th, .comparison-table td {
-                padding: 10px;
-                text-align: center;
-                border: 1px solid #eee;
-            }
-    
-            .comparison-table th {
-                background-color: #f8f9fa;
-            }
-    
-            .comparison-table .metric-name {
-                text-align: left;
-                font-weight: bold;
-            }
-    
-            .comparison-table .change-positive {
-                color: #27ae60;
-            }
-    
-            .comparison-table .change-negative {
-                color: #e74c3c;
-            }
-    
-            .loading-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(255, 255, 255, 0.8);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 2000;
-                display: flex; /* Show initially */
-            }
-            
-            .loading-overlay p {
-                margin-top: 10px;
-                font-weight: bold;
-            }
-    
-            .spinner {
-                border: 5px solid #f3f3f3;
-                border-top: 5px solid #3498db;
-                border-radius: 50%;
-                width: 50px;
-                height: 50px;
-                animation: spin 1s linear infinite;
-            }
-    
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-    
-            .tab-container {
-                margin: 20px;
-            }
-    
-            .tab-buttons {
-                display: flex;
-                gap: 5px;
-                margin-bottom: 10px;
-            }
-    
-            .tab-button {
-                padding: 10px 15px;
-                background-color: #f8f9fa;
-                border: 1px solid #ddd;
-                border-bottom: none;
-                border-radius: 5px 5px 0 0;
-                cursor: pointer;
-            }
-    
-            .tab-button.active {
-                background-color: white;
-                border-bottom: 2px solid white;
-                margin-bottom: -1px;
-                font-weight: bold;
-            }
-    
-            .tab-content {
-                display: none;
-                background: white;
-                border: 1px solid #ddd;
-                border-radius: 0 5px 5px 5px;
-                padding: 20px;
-            }
-    
-            .tab-content.active {
-                display: block;
-            }
-    
-            .comparison-controls {
-                background: #f8f9fa;
-                padding: 20px;
-                border-radius: 5px;
-                margin-bottom: 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 15px;
-            }
-    
-            .comparison-type-selector {
-                display: flex;
-                gap: 10px;
-                margin-bottom: 10px;
-            }
-    
-            .comparison-type-selector button {
-                padding: 8px 15px;
-                border: 1px solid #ddd;
-                background-color: white;
-                border-radius: 4px;
-                cursor: pointer;
-            }
-    
-            .comparison-type-selector button.active {
-                background-color: #3498db;
-                color: white;
-                border-color: #3498db;
-            }
-    
-            .comparison-options {
-                display: none;
-            }
-    
-            .comparison-options.active {
-                display: flex;
-                flex-direction: column;
-                gap: 15px;
-            }
-    
-            .comparison-options .filter-group {
-                flex-direction: row;
-                align-items: center;
-                gap: 10px;
-            }
-    
-            .comparison-options .filter-group label {
-                min-width: 100px;
-            }
-    
-            .comparison-options .week-selectors {
-                display: flex;
-                gap: 10px;
-                flex-wrap: wrap;
-            }
-    
-            .comparison-options .week-selectors select {
-                min-width: 120px;
-            }
-    
-            .comparison-options .range-pickers {
-                display: flex;
-                gap: 10px;
-                flex-wrap: wrap;
-            }
-    
-            .comparison-results {
-                margin-top: 20px;
-            }
-    
-            .metric-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                gap: 15px;
-                margin-top: 15px;
-            }
-    
-            .metric-item {
-                background-color: #f8f9fa;
-                padding: 10px;
-                border-radius: 5px;
-                border-left: 3px solid #3498db;
-            }
-    
-            @media (max-width: 768px) {
-                .controls {
-                    flex-direction: column;
-                    align-items: stretch;
-                }
-    
-                .summary-cards {
-                    grid-template-columns: 1fr;
-                }
-    
-                .details-panel {
-                    width: 100%;
-                    right: -100%;
-                }
-    
-                table {
-                    font-size: 0.8em;
-                }
-    
-                .chart-controls {
-                    flex-direction: column;
-                    align-items: stretch;
-                }
-    
-                .comparison-options .filter-group {
-                    flex-direction: column;
-                    align-items: stretch;
-                }
-    
-                .metric-grid {
-                    grid-template-columns: 1fr;
-                }
-            }
-        .pivot-date{ text-align:center; }
-    
-    /* Meeting Notes Styles */
-    .meeting-notes-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        padding: 20px;
-    }
-    
-    .meeting-box {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        padding: 15px;
-        width: 300px;
-        min-height: 200px;
-    }
-    
-    .meeting-box h3 {
-        margin-top: 0;
-        margin-bottom: 15px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid #eee;
-        font-size: 1.1em;
-    }
-    
-    .meeting-checklist {
-        list-style-type: none;
-        padding: 0;
-    }
-    
-    .meeting-checklist li {
-        margin-bottom: 10px;
-        padding: 8px;
-        background-color: #f9f9f9;
-        border-radius: 4px;
-        display: flex;
-        align-items: flex-start;
-    }
-    
-    .meeting-checklist input[type="checkbox"] {
-        margin-right: 10px;
-        margin-top: 3px;
-    }
-    
-    .meeting-clinic {
-        font-weight: bold;
-        color: #2c3e50;
-    }
-    
-    .meeting-metric {
-        color: #3498db;
-    }
-    
-    .meeting-notes {
-        margin-top: 5px;
-        color: #666;
-        font-size: 0.9em;
-    }
-    
-    .meeting-item-done {
-        text-decoration: line-through;
-        opacity: 0.7;
-    }
-</style>
-    </head>
-    <body>
-        <div class="loading-overlay" id="loadingOverlay">
-            <div>
-                 <div class="spinner"></div>
-                 <p id="loadingMessage">Loading Dashboard Data...</p>
-            </div>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div>
+            <div class="spinner"></div>
+            <p id="loadingMessage">Loading Dashboard Data...</p>
         </div>
-    
-        <div class="header">
-            <h1>Clinic Metrics Alert Dashboard</h1>
-            <div class="last-updated" id="lastUpdated">Loading...</div>
+    </div>
+
+    <div class="header">
+        <h1>Management Clinic Dashboard</h1>
+        <div class="last-updated" id="lastUpdated">Loading...</div>
+    </div>
+
+    <div class="controls">
+        <div class="filter-group">
+            <label>Filter by Alert Level:</label>
+            <select id="alertFilter" onchange="filterTable()" disabled>
+                <option value="all">All Alerts</option>
+                <option value="critical">Critical Only</option>
+                <option value="high">High Only</option>
+                <option value="low">Low Only</option>
+                <option value="slight">Slight Only</option>
+                <option value="normal">Normal Only</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Filter by Clinic:</label>
+            <select id="clinicFilter" onchange="filterTable()" disabled>
+                <option value="all">All Clinics</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Search Clinic:</label>
+            <input type="text" id="searchInput" placeholder="Type clinic name..." onkeyup="filterTable()" disabled>
+        </div>
+        <div class="filter-group">
+            <label>Time Period:</label>
+            <select id="timePeriodFilter" onchange="changeTimePeriod()" disabled></select>
+        </div>
+    </div>
+
+    <div class="summary-cards" id="summaryCards">
+         <div class="summary-card"><p>Loading data...</p></div>
+    </div>
+
+    <div class="tab-container">
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="switchTab(event, 'currentData')">Weekly Updates</button>
+            <button class="tab-button" onclick="switchTab(event, 'dailyTab')">Daily Numbers</button>
+            <button class="tab-button" onclick="switchTab(event, 'meetingNotesTab')">Meeting Notes</button>
         </div>
         
-        <!-- Data Validation Section Removed -->
-    
-        <div class="controls">
-            <div class="filter-group">
-                <label>Filter by Alert Level:</label>
-                <select id="alertFilter" onchange="filterTable()" disabled>
-                    <option value="all">All Alerts</option>
-                    <option value="critical">Critical Only</option>
-                    <option value="high">High Only</option>
-                    <option value="low">Low Only</option>
-                    <option value="slight">Slight Only</option>
-                    <option value="normal">Normal Only</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label>Filter by Clinic:</label>
-                <select id="clinicFilter" onchange="filterTable()" disabled>
-                    <option value="all">All Clinics</option>
-                    <!-- Clinic options will be populated dynamically -->
-                </select>
-            </div>
-            <div class="filter-group">
-                <label>Search Clinic:</label>
-                <input type="text" id="searchInput" placeholder="Type clinic name..." onkeyup="filterTable()" disabled>
-            </div>
-            <div class="filter-group">
-                <label>Time Period:</label>
-                <select id="timePeriodFilter" onchange="changeTimePeriod()" disabled>
-                    <!-- Time periods populated dynamically -->
-                </select>
-            </div>
-            <div class="filter-group">
-                 <label>Filter by Date:</label>
-                <input type="date" id="dateFilter" onchange="filterTable()" disabled>
-             </div>
-            <div class="filter-group">
-                <label>Export Data:</label>
-                <button class="action-button" onclick="exportData()" disabled>Export to CSV</button>
+        <div class="tab-content active" id="currentData">
+            <div class="responsive-table" id="tableView" style="overflow: auto; max-height: 600px;">
+                <table id="metricsTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
-    
-        <div class="summary-cards" id="summaryCards">
-            <!-- Summary cards will be populated dynamically -->
-             <div class="summary-card"><p>Loading data...</p></div>
+
+        <div class="tab-content" id="dailyTab">
+            <div class="controls">
+                 <div class="filter-group">
+                    <label for="dailyMetricSelector">Select Metric:</label>
+                    <select id="dailyMetricSelector"></select>
+                </div>
+                <div class="filter-group">
+                    <label for="dailyDateRange">Select Date Range:</label>
+                    <input type="text" id="dailyDateRange" class="date-range-picker" />
+                </div>
+            </div>
+            <div id="daily-pivot-table-container" class="responsive-table" style="overflow: auto; max-height: 600px;"></div>
         </div>
-    
-        <div class="tab-container">
-            <div class="tab-buttons">
-                <button class="tab-button active" onclick="switchTab(event, 'currentData')">Weekly Updates</button>
-                <button class="tab-button" onclick="switchTab(event, 'historicalTrends')">Historical Trends</button>
-                <button class="tab-button" onclick="switchTab(event, 'comparisonTab')">Comparison</button>
-                <button class="tab-button" onclick="switchTab(event, 'dailyTab')">Daily Numbers</button>
-            
-        <button class="tab-button" onclick="switchTab(event, 'meetingNotesTab')">Meeting Notes</button>
+
+        <div class="tab-content" id="meetingNotesTab">
+            <div id="meeting-notes-container" class="meeting-notes-container"></div>
+        </div>
     </div>
+
+<script>
+    google.charts.load('current', {'packages':['corechart', 'table']});
+    google.charts.setOnLoadCallback(init);
+
+    let allData = [];
+    let dailyData = [];
+    let filteredData = [];
+    const weeklySheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2p_Vp-q7tG3V6V_h_p_s-sI0kz1c_0J6aT_lGg-2-gXJ-pE-0aJ8aY_A8e-f_b_cE-0/pub?gid=1927988355&single=true&output=csv';
+    const dailySheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2p_Vp-q7tG3V6V_h_p_s-sI0kz1c_0J6aT_lGg-2-gXJ-pE-0aJ8aY_A8e-f_b_cE-0/pub?gid=82527434&single=true&output=csv';
+    const meetingNotesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2p_Vp-q7tG3V6V_h_p_s-sI0kz1c_0J6aT_lGg-2-gXJ-pE-0aJ8aY_A8e-f_b_cE-0/pub?gid=1242302533&single=true&output=csv';
+
+    const metricsDefinition = [
+        { id: 'New Patients', name: 'New Patients', type: 'number', higherIsBetter: true, benchmark: 10 },
+        { id: 'Visits Target', name: 'Visits Target', type: 'percentage', higherIsBetter: true, benchmark: 0.95 },
+        { id: 'Daily Dist', name: 'Daily Dist', type: 'percentage', higherIsBetter: true, benchmark: 0.9 },
+        { id: 'Cancellations', name: 'Cancellations', type: 'percentage', higherIsBetter: false, benchmark: 0.1 },
+        { id: 'Evols', name: 'Evols', type: 'number', higherIsBetter: true, benchmark: 15 },
+        { id: 'Self Discharge', name: 'Self Discharge', type: 'percentage', higherIsBetter: false, benchmark: 0.05 }
+    ];
+
+    function showLoading(message = 'Loading...') {
+        document.getElementById('loadingMessage').textContent = message;
+        document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+
+    function hideLoading() {
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    async function fetchData(url) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch data from ${url}`);
+        return await response.text();
+    }
+
+    function parseCSV(csv) {
+        const lines = csv.split(/\r\n|\n/);
+        const headers = lines[0].split(',').map(h => h.trim());
+        return lines.slice(1).map(line => {
+            const values = line.split(',');
+            return headers.reduce((obj, header, index) => {
+                obj[header] = values[index] ? values[index].trim() : '';
+                return obj;
+            }, {});
+        });
+    }
+
+    function getAlertLevel(metric, value) {
+        if (metric.type === 'percentage') value = parseFloat(value) / 100;
+        else value = parseFloat(value);
+
+        if (isNaN(value)) return 'normal'; // Default for non-numeric data
+
+        const deviation = (value - metric.benchmark) / metric.benchmark;
+        const effectiveDeviation = metric.higherIsBetter ? deviation : -deviation;
+
+        if (effectiveDeviation < -0.25) return 'critical';
+        if (effectiveDeviation < -0.10) return 'high';
+        if (effectiveDeviation < 0) return 'low';
+        return 'normal';
+    }
+
+    function populateClinicFilter(data) {
+        const clinics = [...new Set(data.map(item => item.Clinic))].sort();
+        const selector = document.getElementById('clinicFilter');
+        clinics.forEach(clinic => {
+            const option = document.createElement('option');
+            option.value = clinic;
+            option.textContent = clinic;
+            selector.appendChild(option);
+        });
+    }
+
+    function populateTimePeriodFilter(data) {
+        const dates = [...new Set(data.map(item => item.Date))].sort((a, b) => new Date(b) - new Date(a));
+        const selector = document.getElementById('timePeriodFilter');
+        dates.forEach(date => {
+            const option = document.createElement('option');
+            option.value = date;
+            option.textContent = new Date(date).toLocaleDateString();
+            selector.appendChild(option);
+        });
+    }
+
+    function renderTable(data) {
+        const tableBody = document.querySelector('#metricsTable tbody');
+        const tableHead = document.querySelector('#metricsTable thead');
+        tableBody.innerHTML = '';
+        tableHead.innerHTML = '';
+
+        if (data.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="100%">No data available for the selected filters.</td></tr>';
+            return;
+        }
+
+        const headers = ['Clinic', 'Date', ...metricsDefinition.map(m => m.name)];
+        const headerRow = document.createElement('tr');
+        headers.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            headerRow.appendChild(th);
+        });
+        tableHead.appendChild(headerRow);
+
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            const cells = [row.Clinic, new Date(row.Date).toLocaleDateString(), ...metricsDefinition.map(metric => {
+                const value = row[metric.id];
+                const alertLevel = getAlertLevel(metric, value);
+                return `<td class="metric-value"><span class="alert-badge alert-${alertLevel}">${value}</span></td>`;
+            })];
+            tr.innerHTML = cells.join('');
+            tableBody.appendChild(tr);
+        });
+    }
+
+    function updateSummaryCards(data) {
+        const container = document.getElementById('summaryCards');
+        container.innerHTML = '';
+        metricsDefinition.forEach(metric => {
+            const card = document.createElement('div');
+            card.className = 'summary-card';
+            const values = data.map(row => parseFloat(row[metric.id])).filter(v => !isNaN(v));
+            const average = values.length ? (values.reduce((a, b) => a + b, 0) / values.length) : 0;
+            const displayValue = metric.type === 'percentage' ? `${average.toFixed(1)}%` : average.toFixed(1);
+            const alertLevel = getAlertLevel(metric, average);
+            card.innerHTML = `<h3>${metric.name}</h3><div class="number ${alertLevel}">${displayValue}</div>`;
+            container.appendChild(card);
+        });
+    }
+
+    function filterTable() {
+        const alertFilter = document.getElementById('alertFilter').value;
+        const clinicFilter = document.getElementById('clinicFilter').value;
+        const searchInput = document.getElementById('searchInput').value.toLowerCase();
+        const timePeriod = document.getElementById('timePeriodFilter').value;
+
+        filteredData = allData.filter(row => {
+            const matchesTime = row.Date === timePeriod;
+            const matchesClinic = clinicFilter === 'all' || row.Clinic === clinicFilter;
+            const matchesSearch = !searchInput || row.Clinic.toLowerCase().includes(searchInput);
+            if (!matchesTime || !matchesClinic || !matchesSearch) return false;
+
+            if (alertFilter !== 'all') {
+                return metricsDefinition.some(metric => {
+                    return getAlertLevel(metric, row[metric.id]) === alertFilter;
+                });
+            }
+            return true;
+        });
+        renderTable(filteredData);
+    }
+
+    function changeTimePeriod() {
+        filterTable();
+        const timePeriod = document.getElementById('timePeriodFilter').value;
+        const periodData = allData.filter(row => row.Date === timePeriod);
+        updateSummaryCards(periodData);
+    }
+
+    function switchTab(event, tabName) {
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(tb => tb.classList.remove('active'));
+        document.getElementById(tabName).classList.add('active');
+        event.currentTarget.classList.add('active');
+
+        if (tabName === 'dailyTab' && !document.getElementById('dailyMetricSelector').hasChildNodes()) {
+            populateMetricSelector();
+            initializeDateRangePicker();
+            renderDailyPivot();
+        } else if (tabName === 'meetingNotesTab' && !document.getElementById('meeting-notes-container').hasChildNodes()) {
+            fetchMeetingNotes();
+        }
+    }
+
+    function populateMetricSelector() {
+        const selector = document.getElementById('dailyMetricSelector');
+        selector.innerHTML = '';
+        metricsDefinition.forEach(metric => {
+            const option = document.createElement('option');
+            option.value = metric.id;
+            option.textContent = metric.name;
+            selector.appendChild(option);
+        });
+        selector.onchange = renderDailyPivot;
+    }
+
+    function initializeDateRangePicker() {
+        $('#dailyDateRange').daterangepicker({
+            opens: 'left',
+            startDate: moment().subtract(7, 'days'),
+            endDate: moment()
+        }, function(start, end, label) {
+            renderDailyPivot();
+        });
+    }
+
+    function renderDailyPivot() {
+        const container = document.getElementById('daily-pivot-table-container');
+        const selectedMetricId = document.getElementById('dailyMetricSelector').value;
+        const metric = metricsDefinition.find(m => m.id === selectedMetricId);
+        if (!metric) {
+            container.innerHTML = '<p>Please select a metric.</p>';
+            return;
+        }
+
+        const dateRange = $('#dailyDateRange').data('daterangepicker');
+        const startDate = dateRange.startDate;
+        const endDate = dateRange.endDate;
+
+        const filtered = dailyData.filter(row => {
+            const rowDate = moment(row.Date, ['M/D/YYYY', 'YYYY-MM-DD', 'MM/DD/YYYY'], true);
+            return rowDate.isValid() && rowDate.isBetween(startDate, endDate, 'day', '[]');
+        });
+
+        const pivotData = {};
+        filtered.forEach(row => {
+            if (!pivotData[row.Clinic]) {
+                pivotData[row.Clinic] = {};
+            }
+            const formattedDate = moment(row.Date, ['M/D/YYYY', 'YYYY-MM-DD', 'MM/DD/YYYY'], true).format('YYYY-MM-DD');
+            pivotData[row.Clinic][formattedDate] = row[selectedMetricId];
+        });
+
+        const allDates = [...new Set(filtered.map(row => moment(row.Date, ['M/D/YYYY', 'YYYY-MM-DD', 'MM/DD/YYYY'], true).format('YYYY-MM-DD')))].sort();
+        const clinics = Object.keys(pivotData).sort();
+
+        let table = '<table class="comparison-table"><thead><tr><th>Clinic</th>';
+        allDates.forEach(date => table += `<th>${moment(date).format('ddd, MMM D')}</th>`);
+        table += '</tr></thead><tbody>';
+
+        clinics.forEach(clinic => {
+            table += `<tr><td class="metric-name">${clinic}</td>`;
+            allDates.forEach(date => {
+                const value = pivotData[clinic][date] || 'N/A';
+                const alertLevel = value !== 'N/A' ? getAlertLevel(metric, value) : 'normal';
+                table += `<td class="metric-value"><span class="alert-badge alert-${alertLevel}">${value}</span></td>`;
+            });
+            table += '</tr>';
+        });
+
+        table += '</tbody></table>';
+        container.innerHTML = table;
+    }
+
+    async function fetchMeetingNotes() {
+        const container = document.getElementById('meeting-notes-container');
+        try {
+            showLoading('Loading Meeting Notes...');
+            const csv = await fetchData(meetingNotesUrl);
+            const notes = parseCSV(csv);
+            const notesByClinic = {};
+            notes.forEach(note => {
+                if (!notesByClinic[note.Clinic]) {
+                    notesByClinic[note.Clinic] = [];
+                }
+                notesByClinic[note.Clinic].push(note);
+            });
+
+            container.innerHTML = '';
+            Object.keys(notesByClinic).sort().forEach(clinic => {
+                const box = document.createElement('div');
+                box.className = 'meeting-box';
+                let listItems = '';
+                notesByClinic[clinic].forEach(note => {
+                    listItems += `<li>
+                        <div class="meeting-metric">${note.Metric}</div>
+                        <div class="meeting-notes">${note.Notes}</div>
+                    </li>`;
+                });
+                box.innerHTML = `<h3>${clinic}</h3><ul class="meeting-checklist">${listItems}</ul>`;
+                container.appendChild(box);
+            });
+        } catch (error) {
+            console.error('Error fetching meeting notes:', error);
+            container.innerHTML = '<p>Could not load meeting notes. The data source may be unavailable. Please try again later.</p>';
+        } finally {
+            hideLoading();
+        }
+    }
+
+    async function init() {
+        try {
+            showLoading('Loading weekly data...');
+            const [weeklyCsv, dailyCsv] = await Promise.all([
+                fetchData(weeklySheetUrl),
+                fetchData(dailySheetUrl)
+            ]);
+
+            allData = parseCSV(weeklyCsv);
+            dailyData = parseCSV(dailyCsv);
+
+            document.getElementById('lastUpdated').textContent = `Last Updated: ${new Date().toLocaleString()}`;
             
-            <div class="tab-content active" id="currentData">
-                <div class="main-table">
-                    <div class="table-header">
-                        <div id="tableTitle">Clinic Performance Overview</div>
-                        <div class="view-toggle">
-                            <button class="active" onclick="toggleView('table')" disabled>Table View</button>
-                            <button onclick="toggleView('cards')" disabled>Card View</button>
-                        </div>
-                    </div>
-                    <div class="responsive-table" id="tableView" style="overflow: auto; max-height: 500px;">
-                        <table id="metricsTable">
-                            <thead>
-                                <tr>
-                                    <th>Clinic</th>
-                                    <!-- AreaManagerNotes removed -->
-                                    <th>Date</th>
-                                    <th>Notes Alert</th> 
-                                    <th>New Patients</th>
-                                    <th>Visits Target</th>
-                                    <th>Daily Dist</th>
+            populateClinicFilter(allData);
+            populateTimePeriodFilter(allData);
+            
+            const controls = document.querySelectorAll('.controls select, .controls input, .controls button');
+            controls.forEach(c => c.disabled = false);
+
+            changeTimePeriod(); // Initial render
+
+        } catch (error) {
+            console.error('Initialization failed:', error);
+            document.getElementById('loadingMessage').textContent = `Error: ${error.message}. Please check the console and refresh.`;
+        } finally {
+            hideLoading();
+        }
+    }
+
+</script>
+</body>
+</html>
                                     <th>Utilization</th>
                                     <th>Retention (2nd)</th>
                                     <th>Retention (5th)</th>
@@ -3602,48 +3505,19 @@ function generateDailyMetricCell(row, metricId){
         });
     }
     
-    // URL of the Meeting Notes Google Sheet published as CSV
-    // NOTE: If this URL returns 404, it means the Google Sheet is no longer shared or available
-    const googleSheetMeetingNotesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTBp1rqPNc_3K9d8WKg5ynUMUXxCPTM5LTNRB3FgqK8uYreZ63EVZC9C6RiEqKHiwpzqZ38bEoWIpWi/pub?gid=1033388301&single=true&output=csv';
-    
-    // Function to fetch meeting notes data from Google Sheet
-    async function fetchMeetingNotesData() {
-        console.log("Fetching meeting notes data from sheet:", googleSheetMeetingNotesUrl);
-        
-        try {
-            const response = await fetch(googleSheetMeetingNotesUrl);
-            if (!response.ok) {
-                console.warn(`Failed to fetch meeting notes: ${response.status} ${response.statusText}. Using fallback data.`);
-                return getFallbackMeetingNotesData();
-            }
-            
-            const csvText = await response.text();
-            return parseMeetingNotesCSV(csvText);
-        } catch (error) {
-            console.error("Error fetching meeting notes data:", error);
-            return getFallbackMeetingNotesData();
-        }
     }
-    
-    // Function to provide fallback meeting notes data when the Google Sheet is unavailable
-    function getFallbackMeetingNotesData() {
-        console.log("Using fallback meeting notes data");
-        return [
-            {
-                'Date of meeting': moment().format('MM/DD/YYYY'),
-                'Clinic': 'All Clinics',
-                'Metric': 'General',
-                'Notes': 'Unable to load meeting notes from Google Sheets. Please check the Google Sheets URL.',
-                'Done': 'No',
-                'Action Items': 'Update the Google Sheets URL in the dashboard code.',
-                'Owner': 'Admin'
-            }
-        ];
-    }
-    
-    // Function to parse meeting notes CSV data
-    function parseMeetingNotesCSV(csvText) {
-        console.log("Parsing meeting notes CSV data");
+
+    // Parse data rows
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue; // Skip empty lines
+
+        // Handle quoted fields with commas inside them
+        const row = parseCSVRow(lines[i]);
+
+        if (row.length !== headers.length) {
+            console.warn(`Skipping row ${i+1}: incorrect number of fields`);
+            continue;
         
         // Split into lines and get headers
         const lines = csvText.split('\n');
@@ -3856,10 +3730,12 @@ function generateDailyMetricCell(row, metricId){
             allDailyData = allDailyData.concat(allClinicsDailyData[clinic] || []);
         }
         
-        // Filter data by date range
+        // Filter data by date range with flexible date parsing
         const filteredData = allDailyData.filter(entry => {
-            const entryDate = moment(entry.Date, 'MM/DD/YYYY');
-            return entryDate.isSameOrAfter(startDate) && entryDate.isSameOrBefore(endDate);
+            if (!entry.Date) return false;
+            // Try parsing multiple date formats
+            const entryDate = moment(entry.Date, ['MM/DD/YYYY', 'YYYY-MM-DD', 'DD/MM/YYYY'], true);
+            return entryDate.isValid() && entryDate.isSameOrAfter(startDate) && entryDate.isSameOrBefore(endDate);
         });
         
         if (!filteredData.length) {
