@@ -1321,6 +1321,94 @@
                 });
             }
             
+            // Populate time period filter dropdown
+            function populateTimePeriodFilter() {
+                console.log('Populating time period filter');
+                const filterElement = document.getElementById('timePeriodFilter');
+                if (filterElement && availableWeeks && availableWeeks.length > 0) {
+                    let html = '<option value="latest">Latest Week</option>';
+                    availableWeeks.forEach(week => {
+                        html += `<option value="${week.year}-W${week.week}">Week ${week.week}, ${week.year}</option>`;
+                    });
+                    filterElement.innerHTML = html;
+                }
+            }
+            
+            // Populate clinic options dropdown
+            function populateClinicOptions() {
+                console.log('Populating clinic options');
+                const clinicFilter = document.getElementById('clinicFilter');
+                if (clinicFilter && allClinicsData) {
+                    let html = '<option value="all">All Clinics</option>';
+                    Object.keys(allClinicsData).forEach(clinic => {
+                        html += `<option value="${clinic}">${clinic}</option>`;
+                    });
+                    clinicFilter.innerHTML = html;
+                }
+            }
+            
+            // Render daily current data (stub to prevent errors)
+            function renderDailyCurrent() {
+                console.log('renderDailyCurrent called');
+                // This function would render current daily data
+                // For now, it's a stub to prevent console errors
+            }
+            
+            // Populate week selectors for comparison
+            function populateWeekSelectors() {
+                console.log('Populating week selectors for comparison');
+                const week1Select = document.getElementById('week1Select');
+                const week2Select = document.getElementById('week2Select');
+                
+                if (availableWeeks && availableWeeks.length > 0) {
+                    let options = '';
+                    availableWeeks.forEach(week => {
+                        options += `<option value="${week.year}-W${week.week}">Week ${week.week}, ${week.year}</option>`;
+                    });
+                    
+                    if (week1Select) week1Select.innerHTML = options;
+                    if (week2Select) week2Select.innerHTML = options;
+                }
+            }
+            
+            // Update summary cards
+            function updateSummaryCards(data) {
+                console.log('Updating summary cards with data:', data ? data.length : 0, 'clinics');
+                // This would update summary cards in the UI
+                // For now, it's a stub to prevent console errors
+            }
+            
+            // Populate table with data
+            function populateTable(data) {
+                console.log('Populating table with data:', data ? data.length : 0, 'entries');
+                // This would populate the main data table
+                // For now, it's a stub to prevent console errors
+            }
+            
+            // Populate card view with data
+            function populateCardView(data) {
+                console.log('Populating card view with data:', data ? data.length : 0, 'entries');
+                // This would populate the card view
+                // For now, it's a stub to prevent console errors
+            }
+            
+            // Update last updated timestamp
+            function updateLastUpdated() {
+                console.log('Updating last updated timestamp');
+                const lastUpdatedElement = document.getElementById('lastUpdated');
+                if (lastUpdatedElement) {
+                    lastUpdatedElement.textContent = new Date().toLocaleString();
+                }
+            }
+            
+            // Get data for a specific week
+            function getDataForWeek(year, week) {
+                console.log(`Getting data for week ${week}, year ${year}`);
+                // This would return data for a specific week
+                // For now, return empty array to prevent errors
+                return [];
+            }
+            
             // Initial setup function called after Google Charts loads
             async function setupDashboard() {
                 console.log("Dashboard setup initiated.");
