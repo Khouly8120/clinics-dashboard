@@ -1199,7 +1199,8 @@
                     ]);
                     
                     const parsedData = parseCSVData(csvDataText);
-                    const parsedBenchmarks = parseCSVBenchmarkData(csvBenchmarkText);
+                    // Use the same parsing function since benchmark structure is similar
+                    const parsedBenchmarks = parseCSVData(csvBenchmarkText); 
                     
                     processAndStoreData(parsedData);
                     console.log(`Loaded ${Object.keys(allClinicsData).length} clinics with data`);
@@ -3621,17 +3622,17 @@ function generateDailyMetricCell(row, metricId){
 // Add a validation message to the queue
 function addValidationMessage(type, message) {
     // Initialize validationMessages if it doesn't exist
-    if (typeof validationMessages === 'undefined') {
+    if (typeof window.validationMessages === 'undefined' || !Array.isArray(window.validationMessages)) {
         window.validationMessages = [];
     }
-    validationMessages.push({ type, message });
+    window.validationMessages.push({ type, message });
     console.log(`Validation ${type}: ${message}`);
 }
 
 // Display all validation messages in a notification area
 function displayValidationMessages() {
-    // Initialize validationMessages if it doesn't exist
-    if (typeof validationMessages === 'undefined') {
+    // Initialize validationMessages if it doesn't exist or isn't an array
+    if (typeof window.validationMessages === 'undefined' || !Array.isArray(window.validationMessages)) {
         window.validationMessages = [];
     }
     
@@ -3651,7 +3652,7 @@ function displayValidationMessages() {
         return displayValidationMessages(); // Recursive call now that the area exists
     }
     
-    if (window.validationMessages.length === 0) {
+    if (!window.validationMessages || window.validationMessages.length === 0) {
         validationArea.style.display = 'none';
         return;
     }
@@ -3659,15 +3660,21 @@ function displayValidationMessages() {
     validationArea.style.display = 'block';
     validationArea.innerHTML = '';
     
-    window.validationMessages.forEach(msg => {
-        const msgElement = document.createElement('div');
-        msgElement.className = `alert alert-${msg.type}`;
-        msgElement.innerHTML = `
-            <button type="button" class="close" onclick="this.parentElement.remove();">&times;</button>
-            ${msg.message}
-        `;
-        validationArea.appendChild(msgElement);
-    });
+    try {
+        window.validationMessages.forEach(msg => {
+            const msgElement = document.createElement('div');
+            msgElement.className = `alert alert-${msg.type}`;
+            msgElement.innerHTML = `
+                <button type="button" class="close" onclick="this.parentElement.remove();">&times;</button>
+                ${msg.message}
+            `;
+            validationArea.appendChild(msgElement);
+        });
+    } catch (error) {
+        console.error("Error displaying validation messages:", error);
+        // Fallback display if forEach fails
+        validationArea.innerHTML = '<div class="alert alert-error">Error displaying validation messages</div>';
+    }
     
     // Clear the queue after displaying
     window.validationMessages = [];
