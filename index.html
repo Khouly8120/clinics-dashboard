@@ -3603,6 +3603,7 @@ function generateDailyMetricCell(row, metricId){
     }
     
     // URL of the Meeting Notes Google Sheet published as CSV
+    // NOTE: If this URL returns 404, it means the Google Sheet is no longer shared or available
     const googleSheetMeetingNotesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTBp1rqPNc_3K9d8WKg5ynUMUXxCPTM5LTNRB3FgqK8uYreZ63EVZC9C6RiEqKHiwpzqZ38bEoWIpWi/pub?gid=1033388301&single=true&output=csv';
     
     // Function to fetch meeting notes data from Google Sheet
@@ -3612,15 +3613,32 @@ function generateDailyMetricCell(row, metricId){
         try {
             const response = await fetch(googleSheetMeetingNotesUrl);
             if (!response.ok) {
-                throw new Error(`Failed to fetch meeting notes: ${response.status} ${response.statusText}`);
+                console.warn(`Failed to fetch meeting notes: ${response.status} ${response.statusText}. Using fallback data.`);
+                return getFallbackMeetingNotesData();
             }
             
             const csvText = await response.text();
             return parseMeetingNotesCSV(csvText);
         } catch (error) {
             console.error("Error fetching meeting notes data:", error);
-            throw error;
+            return getFallbackMeetingNotesData();
         }
+    }
+    
+    // Function to provide fallback meeting notes data when the Google Sheet is unavailable
+    function getFallbackMeetingNotesData() {
+        console.log("Using fallback meeting notes data");
+        return [
+            {
+                'Date of meeting': moment().format('MM/DD/YYYY'),
+                'Clinic': 'All Clinics',
+                'Metric': 'General',
+                'Notes': 'Unable to load meeting notes from Google Sheets. Please check the Google Sheets URL.',
+                'Done': 'No',
+                'Action Items': 'Update the Google Sheets URL in the dashboard code.',
+                'Owner': 'Admin'
+            }
+        ];
     }
     
     // Function to parse meeting notes CSV data
@@ -3723,6 +3741,210 @@ function generateDailyMetricCell(row, metricId){
         // For now we'll just call it here for testing
         setTimeout(initializeMeetingNotesTab, 1000);
     });
+    
+    // Function to initialize the daily date range picker
+    function initializeDailyRangePicker() {
+        console.log('Initializing daily date range picker...');
+        $('#dateRangePickerDaily').daterangepicker({
+            opens: 'left',
+            autoApply: true,
+            startDate: moment().subtract(2, 'weeks'),
+            endDate: moment(),
+            locale: {
+                format: 'MM/DD/YYYY'
+            }
+        });
+        console.log('Daily date range picker initialized');
+    }
+    
+    // Function to render daily current data
+    function renderDailyCurrent() {
+        console.log('Rendering daily current data...');
+        try {
+            // Update daily metric dropdown
+            updateDailyMetricSelector();
+            
+            // Render the daily pivot table
+            renderDailyPivot();
+            
+            console.log('Daily data rendered successfully');
+        } catch (error) {
+            console.error('Error rendering daily data:', error);
+            document.getElementById('dailyTableBody').innerHTML = '<tr><td colspan="4">Error loading daily data</td></tr>';
+        }
+    }
+    
+    // Function to update daily metric selector
+    function updateDailyMetricSelector() {
+        console.log('Updating daily metric selector...');
+        const metricSelector = document.getElementById('dailyMetricSelector');
+        if (!metricSelector) {
+            console.warn('Daily metric selector not found');
+            return;
+        }
+        
+        // Save current selection if any
+        const currentSelection = metricSelector.value;
+        
+        // Clear and repopulate the dropdown
+        metricSelector.innerHTML = '';
+        
+        // Add metric options for metrics that have numerical values
+        const numericalMetrics = metricsDefinition.filter(m => 
+            m.type === 'percentage' || m.type === 'number');
+            
+        numericalMetrics.forEach(metric => {
+            const option = document.createElement('option');
+            option.value = metric.id;
+            option.textContent = metric.name;
+            metricSelector.appendChild(option);
+        });
+        
+        // Restore previous selection if it exists
+        if (currentSelection && metricSelector.querySelector(`option[value="${currentSelection}"]`)) {
+            metricSelector.value = currentSelection;
+        }
+        
+        // Add change event listener
+        metricSelector.onchange = renderDailyPivot;
+        
+        console.log('Daily metric selector updated');
+    }
+    
+    // Function to render daily pivot table
+    function renderDailyPivot() {
+        console.log('Rendering daily pivot table...');
+        
+        // Get selected metric from dropdown
+        const metricSelector = document.getElementById('dailyMetricSelector');
+        if (!metricSelector) {
+            console.warn('Daily metric selector not found');
+            return;
+        }
+        
+        const selectedMetric = metricSelector.value;
+        const metricName = metricSelector.options[metricSelector.selectedIndex].text;
+        
+        // Get date range if available
+        let startDate = null;
+        let endDate = null;
+        
+        const dateRangePicker = document.getElementById('dateRangePickerDaily');
+        if (dateRangePicker && dateRangePicker.value) {
+            const dates = dateRangePicker.value.split(' - ');
+            if (dates.length === 2) {
+                startDate = moment(dates[0], 'MM/DD/YYYY');
+                endDate = moment(dates[1], 'MM/DD/YYYY');
+            }
+        }
+        
+        // If no date range selected, use last 14 days
+        if (!startDate || !endDate) {
+            endDate = moment();
+            startDate = moment().subtract(14, 'days');
+        }
+        
+        // Get daily data for all clinics
+        if (!allClinicsDailyData || Object.keys(allClinicsDailyData).length === 0) {
+            document.getElementById('dailyTableBody').innerHTML = '<tr><td colspan="8">No daily data available</td></tr>';
+            return;
+        }
+        
+        // Flatten all clinic data
+        let allDailyData = [];
+        for (const clinic in allClinicsDailyData) {
+            allDailyData = allDailyData.concat(allClinicsDailyData[clinic] || []);
+        }
+        
+        // Filter data by date range
+        const filteredData = allDailyData.filter(entry => {
+            const entryDate = moment(entry.Date, 'MM/DD/YYYY');
+            return entryDate.isSameOrAfter(startDate) && entryDate.isSameOrBefore(endDate);
+        });
+        
+        if (!filteredData.length) {
+            document.getElementById('dailyTableBody').innerHTML = '<tr><td colspan="8">No data available for the selected date range</td></tr>';
+            return;
+        }
+        
+        // Group data by date
+        const dateGroups = {};
+        filteredData.forEach(entry => {
+            const date = entry.Date;
+            if (!dateGroups[date]) {
+                dateGroups[date] = [];
+            }
+            dateGroups[date].push(entry);
+        });
+        
+        // Sort dates
+        const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+            return moment(a, 'MM/DD/YYYY').diff(moment(b, 'MM/DD/YYYY'));
+        });
+        
+        // Create table header
+        let headerHtml = '<tr><th>Date</th><th>Clinic</th><th>Value</th><th>Target</th><th>Status</th></tr>';
+        document.getElementById('dailyTableHead').innerHTML = headerHtml;
+        
+        // Create table body
+        let bodyHtml = '';
+        sortedDates.forEach(date => {
+            const entries = dateGroups[date];
+            if (entries && entries.length > 0) {
+                entries.forEach(entry => {
+                    // Get the metric value and benchmark
+                    const value = parseFloat(entry[selectedMetric]) || 0;
+                    let target = 0;
+                    
+                    // Get benchmark for this metric if available
+                    if (dailyBenchmarkData && dailyBenchmarkData[selectedMetric]) {
+                        target = parseFloat(dailyBenchmarkData[selectedMetric]) || 0;
+                    }
+                    
+                    // Determine status based on value vs target
+                    let statusClass = 'alert-normal';
+                    let statusText = 'Normal';
+                    
+                    const higherIsBetter = true; // Modify this logic based on metric definition
+                    
+                    if (higherIsBetter) {
+                        if (value < target * 0.7) {
+                            statusClass = 'alert-critical';
+                            statusText = 'Critical';
+                        } else if (value < target * 0.9) {
+                            statusClass = 'alert-high';
+                            statusText = 'Alert';
+                        } else if (value < target * 0.95) {
+                            statusClass = 'alert-low';
+                            statusText = 'Warning';
+                        }
+                    } else {
+                        if (value > target * 1.3) {
+                            statusClass = 'alert-critical';
+                            statusText = 'Critical';
+                        } else if (value > target * 1.1) {
+                            statusClass = 'alert-high';
+                            statusText = 'Alert';
+                        } else if (value > target * 1.05) {
+                            statusClass = 'alert-low';
+                            statusText = 'Warning';
+                        }
+                    }
+                    
+                    bodyHtml += `<tr>
+                        <td class="pivot-date">${date}</td>
+                        <td class="pivot-clinic">${entry.Clinic}</td>
+                        <td class="pivot-value">${value}</td>
+                        <td class="pivot-target">${target}</td>
+                        <td><span class="alert-badge ${statusClass}">${statusText}</span></td>
+                    </tr>`;
+                });
+            }
+        });
+        
+        document.getElementById('dailyTableBody').innerHTML = bodyHtml || '<tr><td colspan="5">No data available</td></tr>';
+        console.log('Daily pivot table rendered successfully');
+    }
 </script>
     
     <!-- Meeting Notes Tab -->
