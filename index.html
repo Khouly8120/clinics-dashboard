@@ -2050,62 +2050,9 @@
                     tbody.innerHTML+=rowHtml;
                 });
             }
-    // OLD renderDailyCurrent removed for pivot
-                const selectedDateRaw = document.getElementById('dateFilter')?.value;
-                const selectedDate = selectedDateRaw ? moment(selectedDateRaw, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY']).format('YYYY-MM-DD') : '';
-    
-                const tbody = document.getElementById('dailyTableBody');
-                const thead = document.getElementById('dailyTableHead');
-                if(!tbody) return;
-    
-                // Build table header (Clinic as first column; percentage columns)
-                if(thead){
-                    thead.innerHTML = '<tr><th>Clinic</th><th>Target %</th><th>Achieved %</th></tr>';
-                }
-                tbody.innerHTML = '';
-    
-                // Collect rows (limit to last 7 days overall like before)
-                 rows=[];
-                Object.keys(allClinicsDailyData).forEach(clinic=>{
-                    allClinicsDailyData[clinic].forEach(r=>rows.push(r));
-                });
-    
-                rows.sort((a,b)=> b.Date.localeCompare(a.Date));
-    
-                // Keep within last 7 overall days
-             cutoffDate = moment(latestDailyDate).subtract(6,'days').format('YYYY-MM-DD');
-                rows = rows.filter(r=> r.Date>=cutoffDate);
-    
-                if(selectedDate){
-                    rows = rows.filter(r=> r.Date===selectedDate);
-                }
-    
-                // Group by date
-                const grouped = {};
-                rows.forEach(r=>{
-                    if(!grouped[r.Date]) grouped[r.Date]=[];
-                    grouped[r.Date].push(r);
-                });
-    
-                const orderedDates = Object.keys(grouped).sort((a,b)=> b.localeCompare(a));
-                orderedDates.forEach(date=>{
-                    // Date header row spanning all columns
-                    const dateHeader=document.createElement('tr');
-                    dateHeader.className='date-header';
-                    dateHeader.innerHTML = `<td colspan="3" style="background:#6c63ff;color:white;font-weight:bold;position:sticky;left:0;">${moment(date).format('MMM D, YYYY')}</td>`;
-                    tbody.appendChild(dateHeader);
-    
-                    // Sort clinics alphabetically for this date
-                    grouped[date].sort((a,b)=>a.Clinic.localeCompare(b.Clinic)).forEach(r=>{
-                        const tr=document.createElement('tr');
-                        tr.innerHTML = `<td class="clinic-name">${r.Clinic}</td>
-                            ${generateDailyMetricCell(r,'targetVisits')}
-                            ${generateDailyMetricCell(r,'googleReviews')}`;
-                        tbody.appendChild(tr);
-                    });
-                });
-    // Function to render daily pivot data
-    function renderDailyPivot() {
+                
+      // Function to render daily pivot data
+            function renderDailyPivot() {
         const container = document.getElementById('dailyMetricsContainer');
         if (!container) return;
         
