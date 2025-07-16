@@ -3600,17 +3600,23 @@ function generateDailyMetricCell(row, metricId){
     return `<td class="metric-value"><span class="alert-badge alert-${alert}">${display}</span></td>`;
 }
 
-// Store validation messages to display to users
-let validationMessages = [];
-
 // Add a validation message to the queue
 function addValidationMessage(type, message) {
+    // Initialize validationMessages if it doesn't exist
+    if (typeof validationMessages === 'undefined') {
+        window.validationMessages = [];
+    }
     validationMessages.push({ type, message });
     console.log(`Validation ${type}: ${message}`);
 }
 
 // Display all validation messages in a notification area
 function displayValidationMessages() {
+    // Initialize validationMessages if it doesn't exist
+    if (typeof validationMessages === 'undefined') {
+        window.validationMessages = [];
+    }
+    
     const validationArea = document.getElementById('validationMessages');
     if (!validationArea) {
         console.error("Validation message area not found. Creating one...");
@@ -3627,7 +3633,7 @@ function displayValidationMessages() {
         return displayValidationMessages(); // Recursive call now that the area exists
     }
     
-    if (validationMessages.length === 0) {
+    if (window.validationMessages.length === 0) {
         validationArea.style.display = 'none';
         return;
     }
@@ -3635,7 +3641,7 @@ function displayValidationMessages() {
     validationArea.style.display = 'block';
     validationArea.innerHTML = '';
     
-    validationMessages.forEach(msg => {
+    window.validationMessages.forEach(msg => {
         const msgElement = document.createElement('div');
         msgElement.className = `alert alert-${msg.type}`;
         msgElement.innerHTML = `
@@ -3646,7 +3652,7 @@ function displayValidationMessages() {
     });
     
     // Clear the queue after displaying
-    validationMessages = [];
+    window.validationMessages = [];
 }
 
 // Initialize date pickers for the dashboard
