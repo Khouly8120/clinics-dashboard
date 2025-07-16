@@ -1347,11 +1347,46 @@
                 }
             }
             
-            // Render daily current data (stub to prevent errors)
+            // Render daily current data
             function renderDailyCurrent() {
                 console.log('renderDailyCurrent called');
-                // This function would render current daily data
-                // For now, it's a stub to prevent console errors
+                try {
+                    const dailyContainer = document.getElementById('dailyMetricsContainer');
+                    if (!dailyContainer) {
+                        console.warn('Daily metrics container not found');
+                        return;
+                    }
+                    
+                    if (!allClinicsDailyData || Object.keys(allClinicsDailyData).length === 0) {
+                        dailyContainer.innerHTML = '<div style="text-align:center; padding:20px;">No daily data available.</div>';
+                        return;
+                    }
+                    
+                    let html = '<div class="daily-metrics-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">';
+                    
+                    Object.keys(allClinicsDailyData).forEach(clinic => {
+                        const clinicData = allClinicsDailyData[clinic];
+                        if (clinicData && clinicData.length > 0) {
+                            const latestData = clinicData[clinicData.length - 1];
+                            html += `
+                                <div class="clinic-daily-card" style="border:1px solid #ddd; padding:15px; border-radius:8px; background:#f9f9f9;">
+                                    <h4 style="margin:0 0 10px 0; color:#333;">${clinic}</h4>
+                                    <div class="daily-metrics">
+                                        ${latestData['Target Visits'] ? `<div>Target Visits: <strong>${latestData['Target Visits']}</strong></div>` : ''}
+                                        ${latestData['Google Reviews'] ? `<div>Google Reviews: <strong>${latestData['Google Reviews']}</strong></div>` : ''}
+                                        ${latestData.Date ? `<div style="font-size:0.9em; color:#666; margin-top:8px;">Date: ${latestData.Date}</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    html += '</div>';
+                    dailyContainer.innerHTML = html;
+                    console.log(`Rendered daily data for ${Object.keys(allClinicsDailyData).length} clinics`);
+                } catch (error) {
+                    console.error('Error rendering daily current data:', error);
+                }
             }
             
             // Populate week selectors for comparison
@@ -1374,22 +1409,159 @@
             // Update summary cards
             function updateSummaryCards(data) {
                 console.log('Updating summary cards with data:', data ? data.length : 0, 'clinics');
-                // This would update summary cards in the UI
-                // For now, it's a stub to prevent console errors
+                try {
+                    if (!data || data.length === 0) {
+                        console.warn('No data provided for summary cards');
+                        return;
+                    }
+                    
+                    // Calculate summary statistics
+                    const totalClinics = data.length;
+                    const avgNewPatients = data.reduce((sum, clinic) => sum + (parseFloat(clinic['New Patients %']) || 0), 0) / totalClinics;
+                    const avgVisitsTarget = data.reduce((sum, clinic) => sum + (parseFloat(clinic['Visits Target %']) || 0), 0) / totalClinics;
+                    const avgSatisfaction = data.reduce((sum, clinic) => sum + (parseFloat(clinic['Satisfaction Collect']) || 0), 0) / totalClinics;
+                    
+                    // Update summary card elements
+                    const totalClinicsElement = document.getElementById('totalClinics');
+                    const avgNewPatientsElement = document.getElementById('avgNewPatients');
+                    const avgVisitsTargetElement = document.getElementById('avgVisitsTarget');
+                    const avgSatisfactionElement = document.getElementById('avgSatisfaction');
+                    
+                    if (totalClinicsElement) totalClinicsElement.textContent = totalClinics;
+                    if (avgNewPatientsElement) avgNewPatientsElement.textContent = avgNewPatients.toFixed(1) + '%';
+                    if (avgVisitsTargetElement) avgVisitsTargetElement.textContent = avgVisitsTarget.toFixed(1) + '%';
+                    if (avgSatisfactionElement) avgSatisfactionElement.textContent = avgSatisfaction.toFixed(1);
+                    
+                    console.log('Summary cards updated successfully');
+                } catch (error) {
+                    console.error('Error updating summary cards:', error);
+                }
             }
             
             // Populate table with data
             function populateTable(data) {
                 console.log('Populating table with data:', data ? data.length : 0, 'entries');
-                // This would populate the main data table
-                // For now, it's a stub to prevent console errors
+                try {
+                    const tableContainer = document.getElementById('dataTable');
+                    if (!tableContainer) {
+                        console.warn('Data table container not found');
+                        return;
+                    }
+                    
+                    if (!data || data.length === 0) {
+                        tableContainer.innerHTML = '<div style="text-align:center; padding:20px;">No data available for table.</div>';
+                        return;
+                    }
+                    
+                    // Create table HTML
+                    let html = '<table class="data-table" style="width:100%; border-collapse:collapse; margin-top:10px;">';
+                    
+                    // Table header
+                    html += '<thead><tr style="background:#f5f5f5;">';
+                    const headers = ['Clinic', 'New Patients %', 'Visits Target %', 'Cancellation %', 'No Show %', 'Google Reviews', 'Satisfaction'];
+                    headers.forEach(header => {
+                        html += `<th style="padding:12px; border:1px solid #ddd; text-align:left;">${header}</th>`;
+                    });
+                    html += '</tr></thead>';
+                    
+                    // Table body
+                    html += '<tbody>';
+                    data.forEach((row, index) => {
+                        const bgColor = index % 2 === 0 ? '#ffffff' : '#f9f9f9';
+                        html += `<tr style="background:${bgColor};">`;
+                        html += `<td style="padding:10px; border:1px solid #ddd;">${row.Clinic || 'N/A'}</td>`;
+                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['New Patients %'] || 'N/A'}</td>`;
+                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['Visits Target %'] || 'N/A'}</td>`;
+                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['Cancellation %'] || 'N/A'}</td>`;
+                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['No Show %'] || 'N/A'}</td>`;
+                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['Google Reviews Only'] || 'N/A'}</td>`;
+                        html += `<td style="padding:10px; border:1px solid #ddd;">${row['Satisfaction Collect'] || 'N/A'}</td>`;
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                    
+                    tableContainer.innerHTML = html;
+                    console.log(`Populated table with ${data.length} rows`);
+                } catch (error) {
+                    console.error('Error populating table:', error);
+                }
             }
             
             // Populate card view with data
             function populateCardView(data) {
                 console.log('Populating card view with data:', data ? data.length : 0, 'entries');
-                // This would populate the card view
-                // For now, it's a stub to prevent console errors
+                try {
+                    const cardContainer = document.getElementById('cardView');
+                    if (!cardContainer) {
+                        console.warn('Card view container not found');
+                        return;
+                    }
+                    
+                    if (!data || data.length === 0) {
+                        cardContainer.innerHTML = '<div style="text-align:center; padding:20px;">No data available for card view.</div>';
+                        return;
+                    }
+                    
+                    // Create card view HTML
+                    let html = '<div class="cards-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:20px; padding:20px;">';
+                    
+                    data.forEach(clinic => {
+                        const newPatientsPercent = parseFloat(clinic['New Patients %']) || 0;
+                        const visitsTargetPercent = parseFloat(clinic['Visits Target %']) || 0;
+                        const cancellationPercent = parseFloat(clinic['Cancellation %']) || 0;
+                        const noShowPercent = parseFloat(clinic['No Show %']) || 0;
+                        const googleReviews = clinic['Google Reviews Only'] || 'N/A';
+                        const satisfaction = clinic['Satisfaction Collect'] || 'N/A';
+                        
+                        // Determine card color based on performance
+                        let cardColor = '#f8f9fa';
+                        if (visitsTargetPercent >= 90) cardColor = '#d4edda';
+                        else if (visitsTargetPercent >= 70) cardColor = '#fff3cd';
+                        else if (visitsTargetPercent < 70) cardColor = '#f8d7da';
+                        
+                        html += `
+                            <div class="clinic-card" style="border:1px solid #ddd; border-radius:8px; padding:20px; background:${cardColor}; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+                                <h3 style="margin:0 0 15px 0; color:#333; font-size:1.2em;">${clinic.Clinic || 'Unknown Clinic'}</h3>
+                                
+                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
+                                    <span style="font-weight:500;">New Patients:</span>
+                                    <span style="color:${newPatientsPercent >= 15 ? '#28a745' : '#dc3545'}; font-weight:bold;">${newPatientsPercent.toFixed(1)}%</span>
+                                </div>
+                                
+                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
+                                    <span style="font-weight:500;">Visits Target:</span>
+                                    <span style="color:${visitsTargetPercent >= 90 ? '#28a745' : visitsTargetPercent >= 70 ? '#ffc107' : '#dc3545'}; font-weight:bold;">${visitsTargetPercent.toFixed(1)}%</span>
+                                </div>
+                                
+                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
+                                    <span style="font-weight:500;">Cancellation:</span>
+                                    <span style="color:${cancellationPercent <= 10 ? '#28a745' : '#dc3545'}; font-weight:bold;">${cancellationPercent.toFixed(1)}%</span>
+                                </div>
+                                
+                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
+                                    <span style="font-weight:500;">No Show:</span>
+                                    <span style="color:${noShowPercent <= 5 ? '#28a745' : '#dc3545'}; font-weight:bold;">${noShowPercent.toFixed(1)}%</span>
+                                </div>
+                                
+                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
+                                    <span style="font-weight:500;">Google Reviews:</span>
+                                    <span style="font-weight:bold;">${googleReviews}</span>
+                                </div>
+                                
+                                <div class="metric-row" style="display:flex; justify-content:space-between; margin:8px 0; padding:8px; background:rgba(255,255,255,0.7); border-radius:4px;">
+                                    <span style="font-weight:500;">Satisfaction:</span>
+                                    <span style="font-weight:bold;">${satisfaction}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                    cardContainer.innerHTML = html;
+                    console.log(`Populated card view with ${data.length} clinic cards`);
+                } catch (error) {
+                    console.error('Error populating card view:', error);
+                }
             }
             
             // Update last updated timestamp
