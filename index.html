@@ -1872,7 +1872,7 @@
                 rows.forEach(r=>{
                     const isoDate = moment(r.Date, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY','DD/MM/YYYY','D/M/YYYY','MM-DD-YYYY','M-D-YYYY','DD-MM-YYYY','D-M-YYYY']).format('YYYY-MM-DD');
                     r.Date = isoDate;
-                    ['Target of Visits','Google Reviews','New Patients Target'].forEach(col=>{
+                    ['Target of Visits','Google Reviews','New Patients Target','No Upcoming %','Cancellation %','No Show %','Utilization %','Satisfaction Collection %'].forEach(col=>{
                         const val=parseFloat(r[col]); if(!isNaN(val)) r[col]=val;
                     });
                     const clinic=r.Clinic;
@@ -1884,7 +1884,7 @@
                 Object.values(allClinicsDailyData).forEach(arr=>arr.sort((a,b)=>a.Date.localeCompare(b.Date)));
                 Object.values(allClinicsDailyData).forEach(arr=>{
                     arr.forEach(row=>{
-                        ['Target of Visits','Google Reviews','New Patients Target'].forEach(col=>{
+                        ['Target of Visits','Google Reviews','New Patients Target','No Upcoming %','Cancellation %','No Show %','Utilization %','Satisfaction Collection %'].forEach(col=>{
                             const metricId = (col==='Target of Visits')?'targetVisits':(col==='Google Reviews')?'googleReviews':(col==='New Patients Target')?'newPatients':(col==='No Upcoming %')?'noUpcoming':(col==='Cancellation %')?'cancellation':(col==='No Show %')?'noShow':(col==='Utilization %')?'utilization':'satisfactionCollect';
                             const bench=dailyBenchmarkData[row.Date+'|'+row.Clinic]||latestDailyBenchmarkByClinic[row.Clinic]||{};
                             const higherFlag=bench[col+'_HigherIsBetter'];
@@ -1960,20 +1960,20 @@
                 const alert = row[metricId+'Alert']||'normal';
                 const bench = dailyBenchmarkData[row.Date+'|'+row.Clinic] || latestDailyBenchmarkByClinic[row.Clinic] || {};
                 let targetVal;
-    switch(metricId){
-        case 'targetVisits': targetVal = bench['Target of Visits'] ?? bench['TargetVisits']; break;
-        case 'googleReviews': targetVal = bench['Google Reviews'] ?? bench['GoogleReviews']; break;
-        case 'newPatients': targetVal = bench['New Patients Target']; break;
-        case 'noUpcoming': targetVal = bench['No Upcoming %']; break;
-        case 'cancellation': targetVal = bench['Cancellation %']; break;
-        case 'noShow': targetVal = bench['No Show %']; break;
-        case 'utilization': targetVal = bench['Utilization %']; break;
-        case 'satisfactionCollect': targetVal = bench['Satisfaction Collection %']; break;
-        case 'patientWaitTime': targetVal = bench['Patient Wait Time']; break;
-        case 'staffProductivity': targetVal = bench['Staff Productivity']; break;
-        case 'patientSatisfaction': targetVal = bench['Patient Satisfaction']; break;
-        case 'revenueGrowth': targetVal = bench['Revenue Growth']; break;
-    }
+                switch(metricId){
+                    case 'targetVisits': targetVal = bench['Target of Visits'] ?? bench['TargetVisits']; break;
+                    case 'googleReviews': targetVal = bench['Google Reviews'] ?? bench['GoogleReviews']; break;
+                    case 'newPatients': targetVal = bench['New Patients Target']; break;
+                    case 'noUpcoming': targetVal = bench['No Upcoming %']; break;
+                    case 'cancellation': targetVal = bench['Cancellation %']; break;
+                    case 'noShow': targetVal = bench['No Show %']; break;
+                    case 'utilization': targetVal = bench['Utilization %']; break;
+                    case 'satisfactionCollect': targetVal = bench['Satisfaction Collection %']; break;
+                    case 'patientWaitTime': targetVal = bench['Patient Wait Time']; break;
+                    case 'staffProductivity': targetVal = bench['Staff Productivity']; break;
+                    case 'patientSatisfaction': targetVal = bench['Patient Satisfaction']; break;
+                    case 'revenueGrowth': targetVal = bench['Revenue Growth']; break;
+                }
                 let displayVal = value;
                 if(typeof displayVal === 'string' && displayVal.trim().endsWith('%')){
                     displayVal = displayVal.trim().slice(0,-1);
@@ -1985,72 +1985,18 @@
                 }
                 const targetText = (targetDisplay===null||targetDisplay===undefined||targetDisplay==='') ? 'Target: N/A' : `Target: ${targetDisplay}`;
                 // Get trend indicator for the metric (if available)
-    const trend = row[metricId + 'Trend'] || '';
-    const arrow = getTrendArrow(trend);
-    let arrowSpan = '';
-                const metricHeader = metricToColumn[metricId];
-                const tbody=document.getElementById('dailyTableBody');
-                const thead=document.getElementById('dailyTableHead');
-                if(!tbody||!thead) return;
-                tbody.innerHTML='';
-                thead.innerHTML='';
-                if(Object.keys(allClinicsDailyData).length===0){
-                    tbody.innerHTML='<tr><td style="text-align:center;">No daily data</td></tr>';return;
+                const trend = row[metricId + 'Trend'] || '';
+                const arrow = getTrendArrow(trend);
+                let arrowSpan = '';
+                if(arrow){
+                    arrowSpan=`<span class="trend-arrow trend-${trend||'same'}">${arrow}</span>`;
                 }
-                // Collect dates
-                let dateSet=new Set();
-                Object.values(allClinicsDailyData).forEach(arr=>arr.forEach(r=>dateSet.add(r.Date)));
-                let dates=[...dateSet].sort((a,b)=>a.localeCompare(b));
-                // Filter by selected range if provided, else last 7 days
-                const rangeVal = document.getElementById('dateRangePickerDaily').value;
-                let startDate,endDate;
-                if(rangeVal && rangeVal.includes(' - ')){
-                    const [sRaw,eRaw]=rangeVal.split(' - ');
-                    startDate=sRaw.trim();
-                    endDate=eRaw.trim();
-                }
-                if(startDate && endDate){
-                    dates = dates.filter(d=> d>=startDate && d<=endDate);
-                } else {
-                    // default to last 7 days
-                    dates = dates.slice(-7);
-                }
-                // header row
-                let headerRow='<tr><th>Clinic</th><th>Overall Alert</th>';
-                dates.forEach(d=>{headerRow+=`<th class="pivot-date">${moment(d).format('MMM D, YYYY')}</th>`;});
-                headerRow+='</tr>';
-                thead.innerHTML=headerRow;
-                // clinics rows
-                const clinics=Object.keys(allClinicsDailyData).sort((a,b)=>a.localeCompare(b));
-                clinics.forEach(clinic=>{
-                    let rowHtml=`<tr><td class="clinic-name">${clinic}</td>`;
-                    let achievedSum=0, targetSum=0, higherIsBetter=true;
-                    let dateCells='';
-                    dates.forEach(d=>{
-                        const rec=allClinicsDailyData[clinic].find(r=>r.Date===d);
-                        if(rec){
-                            dateCells+= generateDailyMetricCell(rec, metricId);
-                            const benchRow = dailyBenchmarkData[rec.Date+'|'+rec.Clinic] || latestDailyBenchmarkByClinic[rec.Clinic] || {};
-                            const benchVal = benchRow[metricHeader];
-                            const benchNumeric = toNumeric(benchVal);
-                            const achievedNumeric = toNumeric(rec[metricHeader]);
-                            if(benchNumeric!==null && achievedNumeric!==null){
-                                targetSum += benchNumeric;
-                                achievedSum += achievedNumeric;
-                            }
-                            const hFlag = benchRow[metricHeader+'_HigherIsBetter'];
-                            if(hFlag!==undefined&&hFlag!==null) higherIsBetter = (hFlag.toString().toLowerCase()==='true');
-                        } else {
-                            dateCells+='<td>N/A</td>';
-                        }
-                    });
-                    let overall='low';
-                    if(targetSum>0){
-                        overall = getAlertLevel(achievedSum, targetSum, higherIsBetter, metricId);
-                    }
-                    rowHtml+=`<td><span class=\"alert-badge alert-${overall}\">${overall.toUpperCase()}</span></td>`+dateCells+'</tr>';
-                    tbody.innerHTML+=rowHtml;
-                });
+                
+                return `<td class="metric-value">
+                            <div>${displayValue} ${arrowSpan}</div>
+                            <span class="alert-badge alert-${alert}">${alert.toUpperCase()}</span>
+                            <div class="deviation">${targetText}</div>
+                        </td>`;
             }
             function renderDailyPivot(){
                 const metricId = document.getElementById('dailyMetricSelector').value || 'targetVisits';
@@ -2691,7 +2637,7 @@ function generateMetricCell(entry, metricId){
     const csvHeader = metricId.charAt(0).toUpperCase()+metricId.slice(1);
     const rawVal   = entry[csvHeader];
     const target   = entry[csvHeader+'Target']; // may be pre-computed in dataset
-    const trend    = entry[metricId+'Trend'];   // expected values: 'up','down','same'
+    const trend    = entry[metricId+'Trend'];   // expected values: 'up','down','same'  
     const alertLevel = entry[metricId+'Alert']||'normal';
     const metricMeta = metricsDefinition.find(m=>m.id===metricId) || {type:'number'};
 
