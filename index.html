@@ -975,9 +975,7 @@
                             <thead>
                                 <tr>
                                     <th>Clinic</th>
-                                    <!-- AreaManagerNotes removed -->
                                     <th>Date</th>
-                                    <th>Notes Alert</th> 
                                     <th>New Patients</th>
                                     <th>Visits Target</th>
                                     <th>Daily Dist</th>
@@ -1003,7 +1001,7 @@
                                 </tr>
                             </thead>
                             <tbody id="tableBody">
-                                <tr><td colspan="23" style="text-align: center;">Loading data...</td></tr> <!-- Updated colspan -->
+                                <tr><td colspan="22" style="text-align: center;">Loading data...</td></tr> <!-- Updated colspan after removing Notes Alert -->
                             </tbody>
                         </table>
                     </div>
@@ -2678,18 +2676,15 @@ function populateCardView(data) {
         card.className = 'summary-card clinic-card';
         const alertLevel = clinic.overallAlert || 'normal';
         const trendText = clinic.weeklyTrend || 'N/A';
-        const notesAlert = clinic.areaManagerNotesAlertLevel || 'N/A';
         card.innerHTML = `
             <h2 class="status-text alert-${alertLevel}">${alertLevel.toUpperCase()}</h2>
             <h3>${clinic.Clinic}</h3>
             <div class="metric-line">Overall Status</div>
             <div class="metric-line">Trend: ${trendText}</div>
-            <div class="metric-line">Notes Alert: ${notesAlert.toUpperCase()}</div>
             <button class="action-button" onclick="showDetails('${clinic.Clinic}')">Details</button>`;
         container.appendChild(card);
     });
 }
-/* STRAY DUPLICATE BLOCK COMMENTED OUT
 
     const arrow = getTrendArrow(trend);
     let arrowSpan='';
@@ -2719,7 +2714,6 @@ function populateCardView(data) {
                 <span class="alert-badge alert-${alertLevel}">${alertLevel.toUpperCase()}</span>
                 <div class="deviation">${targetText}</div>
             </td>`;
-*/
 
 // Toggle between Table and Card view
             function toggleView(view) {
@@ -2789,8 +2783,7 @@ function populateCardView(data) {
                 const weeklyBenchmarks = benchmarkData[weekKey];
                 
                 let detailsHTML = `<h4>Overall Alert: <span class="alert-badge alert-${clinicData.overallAlert}">${clinicData.overallAlert.toUpperCase()}</span></h4>`;
-                // AreaManagerNotes removed
-                detailsHTML += `<p><strong>Notes Alert Level:</strong> <span class="alert-badge alert-${notesAlert}">${notesAlert.toUpperCase()}</span></p>`;
+                // AreaManagerNotes and Notes Alert removed
                 detailsHTML += `<p><strong>Weekly Trend:</strong> ${clinicData.weeklyTrend || 'N/A'}</p>`;
                 detailsHTML += `<hr style="margin: 15px 0;">`;
                 detailsHTML += `<h4>Metric Details:</h4>`;
@@ -3368,16 +3361,6 @@ function populateCardView(data) {
                     return '<p>Comparison data is missing for one or both periods.</p>';
                 }
     
-                // Handle Notes Alert separately
-                const notesAlert1 = data1['areaManagerNotesAlertLevel'] || 'N/A';
-                const notesAlert2 = data2['areaManagerNotesAlertLevel'] || 'N/A';
-                tableHTML += `<tr>
-                                <td class="metric-name">Notes Alert</td>
-                                <td><span class="alert-badge alert-${notesAlert1}">${notesAlert1.toUpperCase()}</span></td>
-                                <td><span class="alert-badge alert-${notesAlert2}">${notesAlert2.toUpperCase()}</span></td>
-                                <td>${notesAlert1 === notesAlert2 ? 'Same' : 'Changed'}</td>
-                              </tr>`;
-    
                 metricsDefinition.forEach(metric => {
                     // if (metric.type === 'text') return; // Already filtered
     
@@ -3436,20 +3419,7 @@ function populateCardView(data) {
                      return '<p>Comparison data is missing for one or more periods.</p>';
                  }
                  
-                 // Handle Notes Alert separately
-                 tableHTML += `<tr><td class="metric-name">Notes Alert</td>`;
-                 let notesAlerts = [];
-                 dataArray.forEach(data => {
-                     const notesAlert = data['areaManagerNotesAlertLevel'] || 'N/A';
-                     tableHTML += `<td><span class="alert-badge alert-${notesAlert}">${notesAlert.toUpperCase()}</span></td>`;
-                     notesAlerts.push(notesAlert);
-                 });
-                 // Basic trend for notes (first vs last)
-                 let notesTrend = 'N/A';
-                 if (notesAlerts.length >= 2) {
-                     notesTrend = notesAlerts[0] === notesAlerts[notesAlerts.length - 1] ? 'Stable' : 'Changed';
-                 }
-                 tableHTML += `<td>${notesTrend}</td></tr>`;
+                 // Notes Alert removed
     
                  metricsDefinition.forEach(metric => {
                      // if (metric.type === 'text') return;
