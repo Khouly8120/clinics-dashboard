@@ -2686,6 +2686,24 @@ function populateCardView(data) {
     });
 }
 
+// Generate HTML for a metric cell with alert badge, trend arrow, and target deviation.
+function generateMetricCell(entry, metricId){
+    const csvHeader = metricId.charAt(0).toUpperCase()+metricId.slice(1);
+    const rawVal   = entry[csvHeader];
+    const target   = entry[csvHeader+'Target']; // may be pre-computed in dataset
+    const trend    = entry[metricId+'Trend'];   // expected values: 'up','down','same'
+    const alertLevel = entry[metricId+'Alert']||'normal';
+    const metricMeta = metricsDefinition.find(m=>m.id===metricId) || {type:'number'};
+
+    let display = 'N/A';
+    if(rawVal!==null && rawVal!==undefined && rawVal!==''){
+        if(metricMeta.type==='percentage'){
+            const num=parseFloat(rawVal);
+            display = isNaN(num)? rawVal : num.toFixed(1)+'%';
+        } else {
+            display = rawVal;
+        }
+    }
     const arrow = getTrendArrow(trend);
     let arrowSpan='';
     if(arrow){
@@ -2714,6 +2732,7 @@ function populateCardView(data) {
                 <span class="alert-badge alert-${alertLevel}">${alertLevel.toUpperCase()}</span>
                 <div class="deviation">${targetText}</div>
             </td>`;
+}
 
 // Toggle between Table and Card view
             function toggleView(view) {
