@@ -1442,13 +1442,10 @@
                             } else {
                                 entry[header] = num;
                             }
-                        } else if (header === 'Clinic' || header === 'AreaManagerNotesAlert') {
+                        } else if (header === 'Clinic') {
                             if (!value || value.trim() === '') {
-                                 if (header === 'Clinic') { // Clinic is essential
-                                     rowErrors.push(`Missing essential value for ${header}`);
-                                     validEntry = false;
-                                 }
-                                 entry[header] = null; // Allow missing alert
+                                 rowErrors.push(`Missing essential value for ${header}`);
+                                 validEntry = false;
                             } else {
                                  entry[header] = value; // Keep as string
                             }
@@ -2543,13 +2540,10 @@
     
                 data.forEach(clinic => {
                     const row = document.createElement('tr');
-                    const notesAlert = clinic['areaManagerNotesAlertLevel'] || 'normal'; // Use processed level
-                    
                     row.innerHTML = `
         <td class="clinic-name">${clinic.Clinic}</td>
         <td>${clinic.date || ''}</td>
-        <!-- AreaManagerNotes removed -->
-        <td><span class="alert-badge alert-${notesAlert}">${notesAlert.toUpperCase()}</span></td>
+        <!-- AreaManagerNotes and Notes Alert removed -->
         ${generateMetricCell(clinic, 'newPatients')}
         ${generateMetricCell(clinic, 'visitsTarget')}
         ${generateMetricCell(clinic, 'dailyDistribution')}
