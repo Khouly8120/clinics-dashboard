@@ -1848,13 +1848,15 @@
                     const dailyParsed = parseCsv(dailyText, ['Date','Clinic','Target of Visits','Google Reviews','New Patients Target','No Upcoming %','Cancellation %','No Show %','Utilization %','Satisfaction Collection %']);
                     const dailyBenchmarkParsed = parseCsv(dailyBenchmarkText, ['Date','Clinic','Target of Visits','Target of Visits_HigherIsBetter','Google Reviews','Google Reviews_HigherIsBetter','New Patients Target','New Patients Target_HigherIsBetter','No Upcoming %','No Upcoming %_HigherIsBetter','Cancellation %','Cancellation %_HigherIsBetter','No Show %','No Show %_HigherIsBetter','Utilization %','Utilization %_HigherIsBetter','Satisfaction Collection %','Satisfaction Collection %_HigherIsBetter']);
                     dailyBenchmarkParsed.forEach(r=>{
+                        // Convert benchmark dates to same ISO format as daily data
+                        const isoDate = moment(r.Date, ['YYYY-MM-DD','MM/DD/YYYY','M/D/YYYY','DD/MM/YYYY','D/M/YYYY','MM-DD-YYYY','M-D-YYYY','DD-MM-YYYY','D-M-YYYY']).format('YYYY-MM-DD');
+                        r.Date = isoDate;
                         // store exact date+clinic benchmark
                         dailyBenchmarkData[r.Date+'|'+r.Clinic] = r;
                         // keep latest benchmark per clinic as fallback
                         if(!latestDailyBenchmarkByClinic[r.Clinic] || r.Date > latestDailyBenchmarkByClinic[r.Clinic].Date){
                             latestDailyBenchmarkByClinic[r.Clinic] = r;
                         }
-                        dailyBenchmarkData[r.Date+'|'+r.Clinic] = r;
                     });
                     processAndStoreDailyData(dailyParsed);
                     // Refresh Daily Numbers tab now that data is ready
